@@ -16,7 +16,7 @@ const GlobalNavbar = () => (
   <nav style={{ padding: '16px 0', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-secondary)', marginBottom: '32px' }}>
     <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <Link to="/" style={{ fontWeight: 'bold', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <Store size={24} color="var(--accent-color)" /> MTsite
+        <Store size={24} color="var(--accent-color)" /> MTShopi
       </Link>
       <div style={{ display: 'flex', gap: '16px' }}>
         <Link to="/register" className="btn btn-outline" style={{ padding: '8px 16px' }}>Suscribir Tienda</Link>

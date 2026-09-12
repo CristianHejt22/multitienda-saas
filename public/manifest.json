@@ -1,6 +1,6 @@
 {
-  "name": "MTsite",
-  "short_name": "MTsite",
+  "name": "MTShopi",
+  "short_name": "MTShopi",
   "description": "Tu tienda online favorita",
   "start_url": "/",
   "display": "standalone",

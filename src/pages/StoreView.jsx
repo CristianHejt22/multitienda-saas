@@ -145,7 +145,7 @@ export default function StoreView({ forceSlug }) {
             <Gift size={20} color="white" />
           </div>
           <div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Powered by MTsite</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Powered by MTShopi</div>
             <div style={{ fontSize: '0.95rem', fontWeight: 'bold' }}>Crea tu tienda gratis ⚡</div>
           </div>
         </a>
