@@ -39,7 +39,13 @@ export default function StoreAdmin({ forceSlug }) {
     loadData();
   }, [storeSlug]);
 
-  if (!store) return <div className="container">Cargando panel...</div>;
+  if (!store) return (
+    <div className="container" style={{ textAlign: 'center', paddingTop: '100px' }}>
+      <h2>Tienda no encontrada</h2>
+      <p style={{ color: 'var(--text-secondary)' }}>Verifica que la URL sea correcta o que la tienda haya sido creada en este navegador (base de datos local).</p>
+      <Link to="/" className="btn btn-primary" style={{ marginTop: '20px' }}>Volver al inicio</Link>
+    </div>
+  );
 
   const handleUpdateStore = (e) => {
     e.preventDefault();
