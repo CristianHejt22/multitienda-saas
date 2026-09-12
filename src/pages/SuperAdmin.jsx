@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getStores, deleteStore, addStore, getRequests, deleteRequest, getStoreBySlug, updateStore } from '../dataManager';
-import { Trash2, ExternalLink, Settings, PlusCircle, CheckCircle, Clock } from 'lucide-react';
+import { Trash2, ExternalLink, Settings, PlusCircle, CheckCircle, Clock, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { usePopup } from '../context/PopupContext';
 
@@ -101,6 +101,16 @@ export default function SuperAdmin() {
       deleteRequest(id);
       loadData();
     }
+  };
+
+  const sendWhatsAppWelcome = (store) => {
+    if (!store.whatsappNumber) {
+      alert("Esta tienda no tiene un número de WhatsApp registrado.");
+      return;
+    }
+    const text = `¡Hola! 🎉 Tu tienda online en MTShopi ha sido creada con éxito.\n\n📍 URL de tu tienda: https://mtshopi.vercel.app/${store.slug}\n⚙️ Panel de Administración: https://mtshopi.vercel.app/${store.slug}/admin\n\n🔑 Tus accesos:\nUsuario: ${store.slug}\nContraseña: ${store.password}\n\n¡Mucho éxito con tus ventas! 🚀`;
+    const url = `https://wa.me/${store.whatsappNumber}?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
   };
 
   return (
@@ -228,6 +238,9 @@ export default function SuperAdmin() {
                     <Link to={`/${store.slug}/admin`} className="btn btn-outline" style={{ padding: '8px' }} title="Administrar tienda">
                       <Settings size={16} />
                     </Link>
+                    <button className="btn btn-outline" style={{ padding: '8px', color: '#10b981', borderColor: 'transparent' }} onClick={() => sendWhatsAppWelcome(store)} title="Enviar Accesos por WhatsApp">
+                      <MessageCircle size={16} />
+                    </button>
                     <button className="btn btn-outline" style={{ padding: '8px', color: '#ef4444', borderColor: 'transparent' }} onClick={() => handleDelete(store.id)} title="Eliminar">
                       <Trash2 size={16} />
                     </button>
