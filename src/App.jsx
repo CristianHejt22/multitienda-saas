@@ -16,7 +16,7 @@ const GlobalNavbar = () => (
   <nav style={{ padding: '16px 0', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-secondary)', marginBottom: '32px' }}>
     <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <Link to="/" style={{ fontWeight: 'bold', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <Store size={24} color="var(--accent-color)" /> MultiTienda
+        <Store size={24} color="var(--accent-color)" /> MTsite
       </Link>
       <div style={{ display: 'flex', gap: '16px' }}>
         <Link to="/register" className="btn btn-outline" style={{ padding: '8px 16px' }}>Suscribir Tienda</Link>
@@ -36,7 +36,7 @@ function AppRouter() {
     const hostname = simulatedDomain || window.location.hostname;
 
     // Dominios principales de la plataforma (incluyendo tu dominio de Vercel)
-    const baseDomains = ['localhost', '127.0.0.1', 'misuperplataforma.com', 'web-murex.vercel.app'];
+    const baseDomains = ['localhost', '127.0.0.1', 'misuperplataforma.com', 'web-murex.vercel.app', 'mtshopi.vercel.app'];
 
     if (baseDomains.includes(hostname)) {
       setIsCheckingDomain(false);

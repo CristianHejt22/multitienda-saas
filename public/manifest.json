@@ -1,6 +1,6 @@
 {
-  "name": "MultiTienda",
-  "short_name": "MultiTienda",
+  "name": "MTsite",
+  "short_name": "MTsite",
   "description": "Tu tienda online favorita",
   "start_url": "/",
   "display": "standalone",
