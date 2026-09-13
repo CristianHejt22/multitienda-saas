@@ -13,6 +13,12 @@ export default function StoreAdmin({ forceSlug }) {
   const [loading, setLoading] = useState(true);
   const { showPopup } = usePopup();
 
+  // Autenticación
+  const authKey = `auth_${storeSlug}`;
+  const [isAuthenticated, setIsAuthenticated] = useState(sessionStorage.getItem(authKey) === 'true');
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [loginError, setLoginError] = useState('');
+
   // States for UI tabs
   const [activeTab, setActiveTab] = useState('products');
   
@@ -32,19 +38,21 @@ export default function StoreAdmin({ forceSlug }) {
     const s = await getStoreBySlug(storeSlug);
     if (s) {
       setStore(s);
-      const [prods, cats] = await Promise.all([
-        getProductsByStore(s.id),
-        getCategoriesByStore(s.id)
-      ]);
-      setProducts(prods);
-      setCategories(cats);
+      if (isAuthenticated) {
+        const [prods, cats] = await Promise.all([
+          getProductsByStore(s.id),
+          getCategoriesByStore(s.id)
+        ]);
+        setProducts(prods);
+        setCategories(cats);
+      }
     }
     setLoading(false);
   };
 
   useEffect(() => {
     loadData();
-  }, [storeSlug]);
+  }, [storeSlug, isAuthenticated]);
 
   if (loading) return <div className="container" style={{ textAlign: 'center', paddingTop: '100px', color: 'white' }}>Cargando panel...</div>;
 
@@ -55,6 +63,64 @@ export default function StoreAdmin({ forceSlug }) {
       <Link to="/" className="btn btn-primary" style={{ marginTop: '20px' }}>Volver al inicio</Link>
     </div>
   );
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (loginForm.username !== store.slug) {
+      setLoginError('El usuario no corresponde a esta tienda.');
+      return;
+    }
+    if (loginForm.password !== store.password) {
+      setLoginError('Contraseña incorrecta.');
+      return;
+    }
+    setLoginError('');
+    sessionStorage.setItem(authKey, 'true');
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem(authKey);
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <div className="glass-panel animate-fade-in" style={{ padding: '40px', maxWidth: '400px', width: '100%', textAlign: 'center' }}>
+          <h2 style={{ marginBottom: '8px' }}>Acceso al Panel</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>{store.name}</p>
+          
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Usuario</label>
+              <input 
+                required 
+                type="text" 
+                placeholder="Nombre corto de tu tienda" 
+                value={loginForm.username} 
+                onChange={e => setLoginForm({...loginForm, username: e.target.value})} 
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white' }} 
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Contraseña</label>
+              <input 
+                required 
+                type="password" 
+                placeholder="********" 
+                value={loginForm.password} 
+                onChange={e => setLoginForm({...loginForm, password: e.target.value})} 
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white' }} 
+              />
+            </div>
+            {loginError && <div style={{ color: '#ef4444', fontSize: '0.9rem', textAlign: 'center' }}>{loginError}</div>}
+            <button type="submit" className="btn btn-primary" style={{ marginTop: '16px', padding: '14px', fontSize: '1.1rem' }}>Ingresar</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   const handleUpdateStore = async (e) => {
     e.preventDefault();
@@ -137,11 +203,12 @@ export default function StoreAdmin({ forceSlug }) {
           </Link>
           Panel: {store.name}
         </h1>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
           <button className={`btn ${activeTab === 'products' ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setActiveTab('products'); setEditingProduct(null); }}>Productos</button>
           <button className={`btn ${activeTab === 'categories' ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setActiveTab('categories'); setEditingProduct(null); }}>Categorías</button>
           <button className={`btn ${activeTab === 'settings' ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setActiveTab('settings'); setEditingProduct(null); }}>Configuración</button>
-          <button className={`btn ${activeTab === 'referrals' ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setActiveTab('referrals'); setEditingProduct(null); }}>Suscripción & Referidos</button>
+          <button className={`btn ${activeTab === 'referrals' ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setActiveTab('referrals'); setEditingProduct(null); }}>Suscripción</button>
+          <button className="btn btn-outline" onClick={handleLogout} style={{ borderColor: '#ef4444', color: '#ef4444' }}>Salir</button>
         </div>
       </div>
 
