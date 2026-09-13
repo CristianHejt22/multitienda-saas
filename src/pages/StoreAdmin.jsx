@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getStoreBySlug, updateStore, getProductsByStore, getCategoriesByStore, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory, addRequest } from '../dataManager';
-import { ArrowLeft, Plus, Trash2, Link as LinkIcon, Gift, Pencil, X, Image, Users, ListFilter } from 'lucide-react';
+import { getStoreBySlug, updateStore, getProductsByStore, getCategoriesByStore, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory, addRequest, getOrdersByStore, updateOrderStatus } from '../dataManager';
+import { ArrowLeft, Plus, Trash2, Link as LinkIcon, Gift, Pencil, X, Image, Users, ListFilter, ShoppingBag, CheckCircle, Clock } from 'lucide-react';
 import { usePopup } from '../context/PopupContext';
 
 export default function StoreAdmin({ forceSlug }) {
@@ -10,6 +10,7 @@ export default function StoreAdmin({ forceSlug }) {
   const [store, setStore] = useState(null);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const { showPopup } = usePopup();
 
@@ -20,12 +21,15 @@ export default function StoreAdmin({ forceSlug }) {
   const [loginError, setLoginError] = useState('');
 
   // States for UI tabs
-  const [activeTab, setActiveTab] = useState('products');
+  const [activeTab, setActiveTab] = useState('orders');
   
   // States for Product CRUD
   const [editingProduct, setEditingProduct] = useState(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   
+  // States for Change Password
+  const [newPassword, setNewPassword] = useState('');
+
   // Upgrade state
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradePlanSelected, setUpgradePlanSelected] = useState('Anual ($40.000)');
@@ -39,12 +43,14 @@ export default function StoreAdmin({ forceSlug }) {
     if (s) {
       setStore(s);
       if (isAuthenticated) {
-        const [prods, cats] = await Promise.all([
+        const [prods, cats, ords] = await Promise.all([
           getProductsByStore(s.id),
-          getCategoriesByStore(s.id)
+          getCategoriesByStore(s.id),
+          getOrdersByStore(s.id)
         ]);
         setProducts(prods);
         setCategories(cats);
+        setOrders(ords);
       }
     }
     setLoading(false);
@@ -128,6 +134,21 @@ export default function StoreAdmin({ forceSlug }) {
     showPopup('Éxito', 'Configuración guardada correctamente', 'success');
   };
 
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (!newPassword.trim()) return;
+    await updateStore(store.id, { password: newPassword });
+    setNewPassword('');
+    showPopup('Éxito', 'La contraseña de tu tienda ha sido cambiada.', 'success');
+    await loadData();
+  };
+
+  const handleStatusChange = async (orderId, newStatus) => {
+    await updateOrderStatus(orderId, newStatus);
+    showPopup('Estado Actualizado', `El pedido ahora está marcado como ${newStatus}.`, 'success');
+    await loadData();
+  };
+
   const handleAddProductClick = () => {
     setEditingProduct({
       name: '',
@@ -204,6 +225,7 @@ export default function StoreAdmin({ forceSlug }) {
           Panel: {store.name}
         </h1>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button className={`btn ${activeTab === 'orders' ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setActiveTab('orders'); setEditingProduct(null); }}>Pedidos</button>
           <button className={`btn ${activeTab === 'products' ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setActiveTab('products'); setEditingProduct(null); }}>Productos</button>
           <button className={`btn ${activeTab === 'categories' ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setActiveTab('categories'); setEditingProduct(null); }}>Categorías</button>
           <button className={`btn ${activeTab === 'settings' ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setActiveTab('settings'); setEditingProduct(null); }}>Configuración</button>
@@ -262,6 +284,17 @@ export default function StoreAdmin({ forceSlug }) {
             </div>
 
             <button type="submit" className="btn btn-primary" style={{ marginTop: '16px' }}>Guardar Cambios</button>
+          </form>
+
+          <hr style={{ borderColor: 'var(--border-color)', margin: '40px 0' }} />
+          
+          <h2>Seguridad</h2>
+          <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '24px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px' }}>Nueva Contraseña</label>
+              <input type="password" required value={newPassword} onChange={e => setNewPassword(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white' }} />
+            </div>
+            <button type="submit" className="btn btn-outline" style={{ marginTop: '8px', width: 'fit-content', borderColor: 'var(--accent-color)', color: 'var(--accent-color)' }}>Actualizar Contraseña</button>
           </form>
         </div>
       )}
@@ -388,6 +421,114 @@ export default function StoreAdmin({ forceSlug }) {
                   <tr>
                     <td colSpan="2" style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
                       No tienes categorías creadas. Organiza tus productos creándolas arriba.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'orders' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>
+            <div className="glass-panel" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <div style={{ background: 'rgba(99, 102, 241, 0.2)', padding: '16px', borderRadius: '50%', color: store.themeColor }}>
+                <ShoppingBag size={32} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-secondary)' }}>Total Pedidos</h3>
+                <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{orders.length}</div>
+              </div>
+            </div>
+            <div className="glass-panel" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <div style={{ background: 'rgba(239, 68, 68, 0.2)', padding: '16px', borderRadius: '50%', color: '#ef4444' }}>
+                <Clock size={32} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-secondary)' }}>Pendientes</h3>
+                <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{orders.filter(o => o.status === 'PENDIENTE').length}</div>
+              </div>
+            </div>
+            <div className="glass-panel" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <div style={{ background: 'rgba(34, 197, 94, 0.2)', padding: '16px', borderRadius: '50%', color: '#22c55e' }}>
+                <CheckCircle size={32} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-secondary)' }}>Completados</h3>
+                <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{orders.filter(o => o.status === 'ENTREGADO').length}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-panel" style={{ padding: '24px', overflowX: 'auto' }}>
+            <h2 style={{ margin: '0 0 24px 0' }}>Historial de Pedidos</h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', background: 'var(--bg-secondary)' }}>
+                  <th style={{ padding: '16px' }}>Fecha / ID</th>
+                  <th style={{ padding: '16px' }}>Cliente</th>
+                  <th style={{ padding: '16px' }}>Artículos</th>
+                  <th style={{ padding: '16px' }}>Total</th>
+                  <th style={{ padding: '16px' }}>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map(order => (
+                  <tr key={order.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background-color 0.2s' }} className="table-row-hover">
+                    <td style={{ padding: '16px' }}>
+                      <div style={{ fontWeight: 'bold' }}>{new Date(order.created_at).toLocaleDateString()}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{new Date(order.created_at).toLocaleTimeString()}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '4px' }}>#{order.id.split('-')[0]}</div>
+                    </td>
+                    <td style={{ padding: '16px' }}>
+                      <div style={{ fontWeight: 'bold' }}>{order.customerName}</div>
+                      <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{order.customerPhone}</div>
+                    </td>
+                    <td style={{ padding: '16px' }}>
+                      <div style={{ fontSize: '0.9rem' }}>
+                        {order.items.map((item, i) => (
+                          <div key={i}>{item.quantity}x {item.product.name}</div>
+                        ))}
+                      </div>
+                    </td>
+                    <td style={{ padding: '16px', fontWeight: 'bold', color: store.themeColor }}>
+                      ${order.total.toFixed(2)}
+                    </td>
+                    <td style={{ padding: '16px' }}>
+                      <select 
+                        value={order.status}
+                        onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: '20px',
+                          border: '1px solid var(--border-color)',
+                          background: order.status === 'PENDIENTE' ? 'rgba(239, 68, 68, 0.2)' : 
+                                      order.status === 'PAGADO' ? 'rgba(59, 130, 246, 0.2)' :
+                                      order.status === 'ENTREGADO' ? 'rgba(34, 197, 94, 0.2)' : 'var(--bg-secondary)',
+                          color: order.status === 'PENDIENTE' ? '#ef4444' : 
+                                 order.status === 'PAGADO' ? '#3b82f6' :
+                                 order.status === 'ENTREGADO' ? '#22c55e' : 'white',
+                          fontWeight: 'bold',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="PENDIENTE" style={{ color: 'black' }}>Pendiente</option>
+                        <option value="PAGADO" style={{ color: 'black' }}>Pagado</option>
+                        <option value="CONFIRMADO" style={{ color: 'black' }}>Confirmado</option>
+                        <option value="ENVIADO" style={{ color: 'black' }}>Enviado</option>
+                        <option value="ENTREGADO" style={{ color: 'black' }}>Entregado</option>
+                        <option value="CANCELADO" style={{ color: 'black' }}>Cancelado</option>
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+                {orders.length === 0 && (
+                  <tr>
+                    <td colSpan="5" style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                      Aún no tienes pedidos. Cuando un cliente realice una compra, aparecerá aquí.
                     </td>
                   </tr>
                 )}

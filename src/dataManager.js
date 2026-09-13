@@ -182,3 +182,32 @@ export const deleteRequest = async (id) => {
   const { error } = await supabase.from('requests').delete().eq('id', id);
   if (error) console.error(error);
 };
+
+// --- API Pedidos (Orders) ---
+export const getOrdersByStore = async (storeId) => {
+  const { data, error } = await supabase.from('orders').select('*').eq('store_id', storeId).order('created_at', { ascending: false });
+  if (error) console.error(error);
+  return data ? data.map(o => ({...o, storeId: o.store_id, customerName: o.customer_name, customerPhone: o.customer_phone})) : [];
+};
+
+export const addOrder = async (orderData) => {
+  const dbData = {
+    store_id: orderData.storeId,
+    customer_name: orderData.customerName,
+    customer_phone: orderData.customerPhone,
+    items: orderData.items,
+    total: orderData.total,
+    status: orderData.status || 'PENDIENTE'
+  };
+  const { data, error } = await supabase.from('orders').insert([dbData]).select().single();
+  if (error) {
+    console.error(error);
+    throw error;
+  }
+  return data;
+};
+
+export const updateOrderStatus = async (id, status) => {
+  const { error } = await supabase.from('orders').update({ status }).eq('id', id);
+  if (error) console.error(error);
+};
