@@ -15,23 +15,33 @@ export default function ProductDetail({ forceSlug }) {
   const [store, setStore] = useState(null);
   const [product, setProduct] = useState(null);
   const [selectedVariants, setSelectedVariants] = useState({});
+  const [loading, setLoading] = useState(true);
   
   const { addToCart, toggleCart, cartCount } = useCart();
 
   useEffect(() => {
-    const s = getStoreBySlug(storeSlug);
-    if (s) {
-      setStore(s);
-      const prods = getProductsByStore(s.id);
-      const found = prods.find(p => p.id === productId);
-      if (found) {
-        setProduct(found);
+    const fetchData = async () => {
+      setLoading(true);
+      const s = await getStoreBySlug(storeSlug);
+      if (s) {
+        setStore(s);
+        const prods = await getProductsByStore(s.id);
+        const found = prods.find(p => p.id === productId);
+        if (found) {
+          setProduct(found);
+        }
       }
-    }
+      setLoading(false);
+    };
+    fetchData();
   }, [storeSlug, productId]);
 
-  if (!store || !product) {
+  if (loading) {
     return <div style={{ color: 'white', padding: '40px', textAlign: 'center' }}>Cargando producto...</div>;
+  }
+
+  if (!store || !product) {
+    return <div style={{ color: 'white', padding: '40px', textAlign: 'center' }}>Producto no encontrado...</div>;
   }
 
   const handleVariantChange = (variantName, option) => {

@@ -38,35 +38,39 @@ function AppRouter() {
     // Dominios principales de la plataforma (incluyendo tu dominio de Vercel)
     const baseDomains = ['localhost', '127.0.0.1', 'misuperplataforma.com', 'web-murex.vercel.app', 'mtshopi.vercel.app'];
 
-    if (baseDomains.includes(hostname)) {
+    const checkDomain = async () => {
+      if (baseDomains.includes(hostname)) {
+        setIsCheckingDomain(false);
+        return;
+      }
+
+      let isSubdomain = false;
+      let extractedSlug = null;
+      
+      for (const base of baseDomains) {
+        if (hostname.endsWith(`.${base}`)) {
+          isSubdomain = true;
+          extractedSlug = hostname.replace(`.${base}`, '');
+          break;
+        }
+      }
+
+      if (isSubdomain && extractedSlug) {
+        setCustomStoreSlug(extractedSlug);
+      } else {
+        const stores = await getStores();
+        const matchedStore = stores.find(s => s.customDomain === hostname);
+        if (matchedStore) {
+          setCustomStoreSlug(matchedStore.slug);
+        } else if (simulatedDomain) {
+          showPopup('Dominio no encontrado', `No se encontró ninguna tienda vinculada al dominio: ${simulatedDomain}`, 'error');
+        }
+      }
+      
       setIsCheckingDomain(false);
-      return;
-    }
+    };
 
-    let isSubdomain = false;
-    let extractedSlug = null;
-    
-    for (const base of baseDomains) {
-      if (hostname.endsWith(`.${base}`)) {
-        isSubdomain = true;
-        extractedSlug = hostname.replace(`.${base}`, '');
-        break;
-      }
-    }
-
-    if (isSubdomain && extractedSlug) {
-      setCustomStoreSlug(extractedSlug);
-    } else {
-      const stores = getStores();
-      const matchedStore = stores.find(s => s.customDomain === hostname);
-      if (matchedStore) {
-        setCustomStoreSlug(matchedStore.slug);
-      } else if (simulatedDomain) {
-        showPopup('Dominio no encontrado', `No se encontró ninguna tienda vinculada al dominio: ${simulatedDomain}`, 'error');
-      }
-    }
-    
-    setIsCheckingDomain(false);
+    checkDomain();
   }, []);
 
   if (isCheckingDomain) return <div style={{ color: 'white', padding: '40px' }}>Verificando dominio...</div>;

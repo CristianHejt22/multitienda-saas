@@ -7,7 +7,11 @@ export default function Landing() {
   const [stores, setStores] = useState([]);
 
   useEffect(() => {
-    setStores(getStores());
+    const fetchStores = async () => {
+      const dbStores = await getStores();
+      setStores(dbStores);
+    };
+    fetchStores();
   }, []);
 
   return (

@@ -10,6 +10,7 @@ export default function StoreAdmin({ forceSlug }) {
   const [store, setStore] = useState(null);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
   const { showPopup } = usePopup();
 
   // States for UI tabs
@@ -26,30 +27,38 @@ export default function StoreAdmin({ forceSlug }) {
   // Link de referido
   const referralLink = `${window.location.protocol}//${window.location.host}/register?ref=${storeSlug}`;
 
-  const loadData = () => {
-    const s = getStoreBySlug(storeSlug);
+  const loadData = async () => {
+    setLoading(true);
+    const s = await getStoreBySlug(storeSlug);
     if (s) {
       setStore(s);
-      setProducts(getProductsByStore(s.id));
-      setCategories(getCategoriesByStore(s.id));
+      const [prods, cats] = await Promise.all([
+        getProductsByStore(s.id),
+        getCategoriesByStore(s.id)
+      ]);
+      setProducts(prods);
+      setCategories(cats);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
     loadData();
   }, [storeSlug]);
 
+  if (loading) return <div className="container" style={{ textAlign: 'center', paddingTop: '100px', color: 'white' }}>Cargando panel...</div>;
+
   if (!store) return (
     <div className="container" style={{ textAlign: 'center', paddingTop: '100px' }}>
       <h2>Tienda no encontrada</h2>
-      <p style={{ color: 'var(--text-secondary)' }}>Verifica que la URL sea correcta o que la tienda haya sido creada en este navegador (base de datos local).</p>
+      <p style={{ color: 'var(--text-secondary)' }}>Verifica que la URL sea correcta o que la tienda exista.</p>
       <Link to="/" className="btn btn-primary" style={{ marginTop: '20px' }}>Volver al inicio</Link>
     </div>
   );
 
-  const handleUpdateStore = (e) => {
+  const handleUpdateStore = async (e) => {
     e.preventDefault();
-    updateStore(store.id, store);
+    await updateStore(store.id, store);
     showPopup('Éxito', 'Configuración guardada correctamente', 'success');
   };
 
@@ -64,7 +73,7 @@ export default function StoreAdmin({ forceSlug }) {
     });
   };
 
-  const handleSaveProduct = (e) => {
+  const handleSaveProduct = async (e) => {
     e.preventDefault();
     const prodToSave = {
       ...editingProduct,
@@ -73,43 +82,42 @@ export default function StoreAdmin({ forceSlug }) {
     };
 
     if (prodToSave.id) {
-      updateProduct(prodToSave.id, prodToSave);
+      await updateProduct(prodToSave.id, prodToSave);
     } else {
-      addProduct({
+      await addProduct({
         ...prodToSave,
         storeId: store.id,
-        categoryId: prodToSave.categoryId || (categories[0]?.id || null),
-        variants: []
+        categoryId: prodToSave.categoryId || (categories[0]?.id || null)
       });
     }
     setEditingProduct(null);
-    loadData();
+    await loadData();
   };
 
-  const handleDeleteProduct = (id) => {
+  const handleDeleteProduct = async (id) => {
     if(window.confirm('¿Borrar producto? Esta acción no se puede deshacer.')) {
-      deleteProduct(id);
-      loadData();
+      await deleteProduct(id);
+      await loadData();
     }
   };
 
-  const handleSaveCategory = (e) => {
+  const handleSaveCategory = async (e) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
-    addCategory(newCategoryName, store.id);
+    await addCategory(newCategoryName, store.id);
     setNewCategoryName('');
-    loadData();
+    await loadData();
   };
 
-  const handleDeleteCategory = (id) => {
+  const handleDeleteCategory = async (id) => {
     if(window.confirm('¿Borrar categoría? Solo hazlo si está vacía.')) {
-      deleteCategory(id);
-      loadData();
+      await deleteCategory(id);
+      await loadData();
     }
   };
 
-  const handleRequestUpgrade = () => {
-    addRequest({
+  const handleRequestUpgrade = async () => {
+    await addRequest({
       type: 'UPGRADE',
       storeId: store.id,
       storeName: store.name,

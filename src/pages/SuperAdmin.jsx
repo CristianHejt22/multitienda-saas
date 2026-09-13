@@ -9,25 +9,32 @@ export default function SuperAdmin() {
   const [requests, setRequests] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newStore, setNewStore] = useState({ name: '', whatsappNumber: '', description: '' });
+  const [loading, setLoading] = useState(true);
   const { showPopup } = usePopup();
 
-  const loadData = () => {
-    setStores(getStores());
-    setRequests(getRequests());
+  const loadData = async () => {
+    setLoading(true);
+    const [dbStores, dbRequests] = await Promise.all([
+      getStores(),
+      getRequests()
+    ]);
+    setStores(dbStores);
+    setRequests(dbRequests);
+    setLoading(false);
   };
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("¿Seguro que deseas eliminar esta tienda y todo su contenido?")) {
-      deleteStore(id);
-      loadData();
+      await deleteStore(id);
+      await loadData();
     }
   };
 
-  const handleAddStore = (e) => {
+  const handleAddStore = async (e) => {
     e.preventDefault();
     const slug = newStore.name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
     const generatedPassword = Math.random().toString(36).slice(-8); // Random 8 char password
@@ -41,7 +48,7 @@ export default function SuperAdmin() {
       logoUrl: `https://ui-avatars.com/api/?name=${newStore.name}&background=6366f1&color=fff&size=128`
     };
 
-    addStore(storeToAdd);
+    await addStore(storeToAdd);
     showPopup(
       'Tienda Creada Exitosamente',
       `Slug: /${slug}\nContraseña: ${generatedPassword}\n\nEnvíale estos datos al cliente para que acceda a su panel.`,
@@ -49,15 +56,15 @@ export default function SuperAdmin() {
     );
     setNewStore({ name: '', whatsappNumber: '', description: '' });
     setShowAddForm(false);
-    loadData();
+    await loadData();
   };
 
-  const handleApproveRequest = (req) => {
+  const handleApproveRequest = async (req) => {
     if (req.type === 'UPGRADE') {
-      updateStore(req.storeId, { subscriptionPlan: req.requestedPlan });
-      deleteRequest(req.id);
+      await updateStore(req.storeId, { subscriptionPlan: req.requestedPlan });
+      await deleteRequest(req.id);
       showPopup('Plan Actualizado', `La tienda "${req.storeName}" ha sido actualizada a: ${req.requestedPlan}`, 'success');
-      loadData();
+      await loadData();
       return;
     }
 
@@ -78,30 +85,32 @@ export default function SuperAdmin() {
       logoUrl: `https://ui-avatars.com/api/?name=${req.name}&background=6366f1&color=fff&size=128`
     };
 
-    addStore(storeToAdd);
+    await addStore(storeToAdd);
 
     if (req.referralCode) {
-      const refStore = getStoreBySlug(req.referralCode);
+      const refStore = await getStoreBySlug(req.referralCode);
       if (refStore) {
-        updateStore(refStore.id, { affiliateCount: (refStore.affiliateCount || 0) + 1 });
+        await updateStore(refStore.id, { affiliateCount: (refStore.affiliateCount || 0) + 1 });
       }
     }
 
-    deleteRequest(req.id);
+    await deleteRequest(req.id);
     showPopup(
       'Solicitud Aprobada',
       `La tienda ha sido creada.\nContraseña generada: ${generatedPassword}\n\nYa puedes enviarle los accesos por WhatsApp al número: ${req.whatsappNumber}`,
       'success'
     );
-    loadData();
+    await loadData();
   };
 
-  const handleRejectRequest = (id) => {
+  const handleRejectRequest = async (id) => {
     if (window.confirm('¿Rechazar y eliminar esta solicitud?')) {
-      deleteRequest(id);
-      loadData();
+      await deleteRequest(id);
+      await loadData();
     }
   };
+
+  if (loading) return <div className="container" style={{ textAlign: 'center', paddingTop: '40px', color: 'white' }}>Cargando panel...</div>;
 
   const sendWhatsAppWelcome = (store) => {
     if (!store.whatsappNumber) {

@@ -15,6 +15,7 @@ export default function StoreView({ forceSlug }) {
   const [storeProducts, setStoreProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
   
   const { cartCount, toggleCart } = useCart();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -45,13 +46,26 @@ export default function StoreView({ forceSlug }) {
   };
 
   useEffect(() => {
-    const s = getStoreBySlug(storeSlug);
-    if (s) {
-      setStore(s);
-      setStoreCategories(getCategoriesByStore(s.id));
-      setStoreProducts(getProductsByStore(s.id));
-    }
+    const fetchStoreData = async () => {
+      setLoading(true);
+      const s = await getStoreBySlug(storeSlug);
+      if (s) {
+        setStore(s);
+        const [cats, prods] = await Promise.all([
+          getCategoriesByStore(s.id),
+          getProductsByStore(s.id)
+        ]);
+        setStoreCategories(cats);
+        setStoreProducts(prods);
+      }
+      setLoading(false);
+    };
+    fetchStoreData();
   }, [storeSlug]);
+
+  if (loading) {
+    return <div className="container" style={{ textAlign: 'center', paddingTop: '100px', color: 'white' }}>Cargando tienda...</div>;
+  }
 
   if (!store) {
     return (
