@@ -95,6 +95,11 @@ export const deleteCategory = async (id) => {
   if (error) console.error(error);
 };
 
+export const updateCategory = async (id, name) => {
+  const { error } = await supabase.from('categories').update({ name }).eq('id', id);
+  if (error) console.error(error);
+};
+
 // --- API Productos ---
 export const getProductsByStore = async (storeId) => {
   const { data, error } = await supabase.from('products').select('*').eq('store_id', storeId).order('created_at', { ascending: false });

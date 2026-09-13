@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getStoreBySlug, updateStore, getProductsByStore, getCategoriesByStore, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory, addRequest, getOrdersByStore, updateOrderStatus } from '../dataManager';
-import { ArrowLeft, Plus, Trash2, Link as LinkIcon, Gift, Pencil, X, Image, Users, ListFilter, ShoppingBag, CheckCircle, Clock } from 'lucide-react';
+import { getStoreBySlug, updateStore, getProductsByStore, getCategoriesByStore, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory, updateCategory, addRequest, getOrdersByStore, updateOrderStatus } from '../dataManager';
+import { ArrowLeft, Plus, Trash2, Link as LinkIcon, Gift, Pencil, X, Image, Users, ListFilter, ShoppingBag, CheckCircle, Clock, Check } from 'lucide-react';
 import { usePopup } from '../context/PopupContext';
 
 export default function StoreAdmin({ forceSlug }) {
@@ -25,7 +25,11 @@ export default function StoreAdmin({ forceSlug }) {
   
   // States for Product CRUD
   const [editingProduct, setEditingProduct] = useState(null);
+  
+  // States for Category CRUD
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
+  const [editingCategoryName, setEditingCategoryName] = useState('');
   
   // States for Change Password
   const [newPassword, setNewPassword] = useState('');
@@ -197,10 +201,20 @@ export default function StoreAdmin({ forceSlug }) {
   };
 
   const handleDeleteCategory = async (id) => {
-    if(window.confirm('¿Borrar categoría? Solo hazlo si está vacía.')) {
+    if (window.confirm('¿Estás seguro de que quieres eliminar esta categoría?')) {
       await deleteCategory(id);
+      showPopup('Categoría eliminada', 'La categoría ha sido eliminada correctamente.', 'success');
       await loadData();
     }
+  };
+
+  const handleUpdateCategory = async (id) => {
+    if (!editingCategoryName.trim()) return;
+    await updateCategory(id, editingCategoryName);
+    setEditingCategoryId(null);
+    setEditingCategoryName('');
+    showPopup('Éxito', 'La categoría ha sido actualizada.', 'success');
+    await loadData();
   };
 
   const handleRequestUpgrade = async () => {
@@ -409,11 +423,39 @@ export default function StoreAdmin({ forceSlug }) {
               <tbody>
                 {categories.map(cat => (
                   <tr key={cat.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: '16px', fontWeight: 'bold' }}>{cat.name}</td>
+                    <td style={{ padding: '16px', fontWeight: 'bold' }}>
+                      {editingCategoryId === cat.id ? (
+                        <input
+                          type="text"
+                          value={editingCategoryName}
+                          onChange={(e) => setEditingCategoryName(e.target.value)}
+                          autoFocus
+                          style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'white' }}
+                        />
+                      ) : (
+                        cat.name
+                      )}
+                    </td>
                     <td style={{ padding: '16px', textAlign: 'right' }}>
-                      <button className="btn btn-outline" style={{ padding: '8px', color: '#ef4444', borderColor: 'transparent' }} onClick={() => handleDeleteCategory(cat.id)}>
-                        <Trash2 size={18} />
-                      </button>
+                      {editingCategoryId === cat.id ? (
+                        <>
+                          <button className="btn btn-outline" style={{ padding: '8px', marginRight: '8px', color: '#22c55e', borderColor: 'transparent' }} onClick={() => handleUpdateCategory(cat.id)}>
+                            <Check size={18} />
+                          </button>
+                          <button className="btn btn-outline" style={{ padding: '8px', color: 'var(--text-secondary)', borderColor: 'transparent' }} onClick={() => { setEditingCategoryId(null); setEditingCategoryName(''); }}>
+                            <X size={18} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button className="btn btn-outline" style={{ padding: '8px', marginRight: '8px', borderColor: 'transparent' }} onClick={() => { setEditingCategoryId(cat.id); setEditingCategoryName(cat.name); }}>
+                            <Pencil size={18} />
+                          </button>
+                          <button className="btn btn-outline" style={{ padding: '8px', color: '#ef4444', borderColor: 'transparent' }} onClick={() => handleDeleteCategory(cat.id)}>
+                            <Trash2 size={18} />
+                          </button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}
