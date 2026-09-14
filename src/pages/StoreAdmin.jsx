@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getStoreBySlug, updateStore, getProductsByStore, getCategoriesByStore, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory, updateCategory, addRequest, getOrdersByStore, updateOrderStatus, uploadImage } from '../dataManager';
-import { ArrowLeft, Plus, Trash2, Link as LinkIcon, Gift, Pencil, X, Image, Users, ListFilter, ShoppingBag, CheckCircle, Clock, Check, Upload } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Link as LinkIcon, Gift, Pencil, X, Image, Users, ListFilter, ShoppingBag, CheckCircle, Clock, Check, Upload, Megaphone, Share2, Download, Copy } from 'lucide-react';
 import { usePopup } from '../context/PopupContext';
 import { compressImage } from '../utils/imageCompressor';
 
@@ -41,6 +41,10 @@ export default function StoreAdmin({ forceSlug }) {
 
   // Upload state
   const [isUploading, setIsUploading] = useState(false);
+
+  // Marketing state
+  const [marketingSelectedProduct, setMarketingSelectedProduct] = useState('');
+  const canvasRef = useRef(null);
 
   // Link de referido
   const referralLink = `${window.location.protocol}//${window.location.host}/register?ref=${storeSlug}`;
@@ -250,6 +254,97 @@ export default function StoreAdmin({ forceSlug }) {
     showPopup('Solicitud Enviada', 'Tu solicitud de mejora ha sido enviada con éxito. Te contactaremos pronto.', 'success');
   };
 
+  // --- Marketing Logic ---
+  const drawPost = () => {
+    if (!canvasRef.current || !marketingSelectedProduct) return;
+    const product = products.find(p => p.id === marketingSelectedProduct);
+    if (!product) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    
+    // Set background
+    ctx.fillStyle = store.themeColor || '#6366f1';
+    ctx.fillRect(0, 0, 1080, 1080);
+
+    // Draw Store Name at top
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 64px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(store.name.toUpperCase(), 540, 100);
+
+    // Draw Price at bottom
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 96px sans-serif';
+    ctx.fillText(`$${product.price}`, 540, 1030);
+
+    // Draw product image
+    const img = new window.Image();
+    img.crossOrigin = "anonymous"; // Important for external URLs
+    img.onload = () => {
+      // White background for the image
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(140, 140, 800, 800);
+      
+      const scale = Math.min(800 / img.width, 800 / img.height);
+      const scaledW = img.width * scale;
+      const scaledH = img.height * scale;
+      const x = 140 + (800 / 2) - (scaledW / 2);
+      const y = 140 + (800 / 2) - (scaledH / 2);
+      
+      ctx.drawImage(img, x, y, scaledW, scaledH);
+    };
+    img.onerror = () => {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(140, 140, 800, 800);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '40px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Sin Imagen', 540, 540);
+    };
+    img.src = product.imageUrl || 'https://via.placeholder.com/800';
+  };
+
+  useEffect(() => {
+    if (activeTab === 'marketing' && marketingSelectedProduct) {
+      drawPost();
+    }
+  }, [activeTab, marketingSelectedProduct, products]);
+
+  const handleDownloadPost = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    try {
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      const link = document.createElement('a');
+      link.download = `post_${store.slug}_${marketingSelectedProduct}.jpg`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      showPopup('Error', 'No se pudo descargar la imagen, probablemente por políticas de CORS en la URL original.', 'error');
+    }
+  };
+
+  const getCopyText = (type) => {
+    const product = products.find(p => p.id === marketingSelectedProduct);
+    if (!product) return '';
+    const link = `${window.location.protocol}//${window.location.host}/${store.slug}`;
+    switch(type) {
+      case 'promo':
+        return `🔥 ¡NUEVO INGRESO! 🔥\n\nLlegó ${product.name} y está increíble. 😍\n\nConsíguelo por solo $${product.price} en nuestra tienda online.\n\n👉 ${link}\n\n#${store.name.replace(/\s+/g, '')} #Oferta #Novedad`;
+      case 'urgency':
+        return `⏳ ¡ÚLTIMAS UNIDADES! ⏳\n\nNo te quedes sin tu ${product.name}. ¡Vuelan! 🏃‍♂️💨\n\nPrecio especial: $${product.price}\n\n🛒 Comprá acá: ${link}\n\n#${store.name.replace(/\s+/g, '')} #Promo`;
+      case 'minimal':
+        return `✨ ${product.name} ✨\n\n$${product.price}\n\nEncontralo en nuestra web:\n🔗 ${link}`;
+      default: return '';
+    }
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    showPopup('Copiado', 'Texto copiado al portapapeles', 'success');
+  };
+
   return (
     <div className="container" style={{ paddingTop: '32px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
@@ -263,11 +358,112 @@ export default function StoreAdmin({ forceSlug }) {
           <button className={`btn ${activeTab === 'orders' ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setActiveTab('orders'); setEditingProduct(null); }}>Pedidos</button>
           <button className={`btn ${activeTab === 'products' ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setActiveTab('products'); setEditingProduct(null); }}>Productos</button>
           <button className={`btn ${activeTab === 'categories' ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setActiveTab('categories'); setEditingProduct(null); }}>Categorías</button>
+          <button className={`btn ${activeTab === 'marketing' ? 'btn-primary' : 'btn-outline'}`} style={{ color: activeTab !== 'marketing' ? '#8b5cf6' : 'white', borderColor: activeTab !== 'marketing' ? '#8b5cf6' : 'transparent', backgroundColor: activeTab === 'marketing' ? '#8b5cf6' : 'transparent' }} onClick={() => { setActiveTab('marketing'); setEditingProduct(null); }}>Marketing</button>
           <button className={`btn ${activeTab === 'settings' ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setActiveTab('settings'); setEditingProduct(null); }}>Configuración</button>
           <button className={`btn ${activeTab === 'referrals' ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setActiveTab('referrals'); setEditingProduct(null); }}>Suscripción</button>
           <button className="btn btn-outline" onClick={handleLogout} style={{ borderColor: '#ef4444', color: '#ef4444' }}>Salir</button>
         </div>
       </div>
+
+      {activeTab === 'marketing' && (
+        <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '300px' }}>
+            <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                <Megaphone size={28} color="#8b5cf6" />
+                <h2 style={{ margin: 0 }}>Generador de Post</h2>
+              </div>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>Selecciona un producto para generar automáticamente un flyer para tus redes sociales (1080x1080).</p>
+              
+              <select 
+                value={marketingSelectedProduct} 
+                onChange={(e) => setMarketingSelectedProduct(e.target.value)}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white', marginBottom: '24px' }}
+              >
+                <option value="" disabled>Elegir un producto...</option>
+                {products.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} - ${p.price}</option>
+                ))}
+              </select>
+
+              {marketingSelectedProduct && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                  <canvas 
+                    ref={canvasRef} 
+                    width={1080} 
+                    height={1080} 
+                    style={{ width: '100%', maxWidth: '300px', height: 'auto', borderRadius: '8px', border: '1px solid var(--border-color)' }}
+                  />
+                  <button className="btn btn-primary" onClick={handleDownloadPost} style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', backgroundColor: '#8b5cf6', color: 'white', border: 'none' }}>
+                    <Download size={20} /> Descargar para Instagram
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="glass-panel" style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                <Share2 size={28} color="#3b82f6" />
+                <h2 style={{ margin: 0 }}>Difusión Rápida</h2>
+              </div>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>Comparte el enlace de tu tienda con tus clientes rápidamente.</p>
+              
+              <div style={{ display: 'flex', gap: '12px', flexDirection: 'column' }}>
+                <button className="btn btn-outline" onClick={() => copyToClipboard(`${window.location.protocol}//${window.location.host}/${store.slug}`)} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                  <Copy size={20} /> Copiar URL de la Tienda
+                </button>
+                <a href={`https://wa.me/?text=¡Hola!%20Visita%20nuestra%20tienda%20online%20acá:%20${window.location.protocol}//${window.location.host}/${store.slug}`} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', backgroundColor: '#25D366', color: 'white', border: 'none', textDecoration: 'none' }}>
+                  Compartir por WhatsApp
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ flex: 1, minWidth: '300px' }}>
+            {marketingSelectedProduct ? (
+              <div className="glass-panel" style={{ padding: '24px' }}>
+                <h2 style={{ marginBottom: '24px' }}>Textos para Redes Sociales (Copy)</h2>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', marginBottom: '8px', color: '#10b981' }}>Estilo Promocional</h3>
+                    <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', position: 'relative', whiteSpace: 'pre-wrap' }}>
+                      {getCopyText('promo')}
+                      <button className="btn btn-outline" onClick={() => copyToClipboard(getCopyText('promo'))} style={{ position: 'absolute', top: '8px', right: '8px', padding: '6px', background: 'var(--bg-color)' }} title="Copiar">
+                        <Copy size={16} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', marginBottom: '8px', color: '#f59e0b' }}>Estilo Urgencia</h3>
+                    <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', position: 'relative', whiteSpace: 'pre-wrap' }}>
+                      {getCopyText('urgency')}
+                      <button className="btn btn-outline" onClick={() => copyToClipboard(getCopyText('urgency'))} style={{ position: 'absolute', top: '8px', right: '8px', padding: '6px', background: 'var(--bg-color)' }} title="Copiar">
+                        <Copy size={16} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', marginBottom: '8px', color: '#3b82f6' }}>Estilo Minimalista</h3>
+                    <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', position: 'relative', whiteSpace: 'pre-wrap' }}>
+                      {getCopyText('minimal')}
+                      <button className="btn btn-outline" onClick={() => copyToClipboard(getCopyText('minimal'))} style={{ position: 'absolute', top: '8px', right: '8px', padding: '6px', background: 'var(--bg-color)' }} title="Copiar">
+                        <Copy size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="glass-panel" style={{ padding: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px', textAlign: 'center' }}>
+                <p style={{ color: 'var(--text-secondary)' }}>Selecciona un producto a la izquierda para generar los textos publicitarios.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {activeTab === 'settings' && (
         <div className="glass-panel" style={{ padding: '32px', maxWidth: '600px' }}>
