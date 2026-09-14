@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getStoreBySlug, updateStore, getProductsByStore, getCategoriesByStore, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory, updateCategory, addRequest, getOrdersByStore, updateOrderStatus } from '../dataManager';
-import { ArrowLeft, Plus, Trash2, Link as LinkIcon, Gift, Pencil, X, Image, Users, ListFilter, ShoppingBag, CheckCircle, Clock, Check } from 'lucide-react';
+import { getStoreBySlug, updateStore, getProductsByStore, getCategoriesByStore, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory, updateCategory, addRequest, getOrdersByStore, updateOrderStatus, uploadImage } from '../dataManager';
+import { ArrowLeft, Plus, Trash2, Link as LinkIcon, Gift, Pencil, X, Image, Users, ListFilter, ShoppingBag, CheckCircle, Clock, Check, Upload } from 'lucide-react';
 import { usePopup } from '../context/PopupContext';
+import { compressImage } from '../utils/imageCompressor';
 
 export default function StoreAdmin({ forceSlug }) {
   const params = useParams();
@@ -37,6 +38,9 @@ export default function StoreAdmin({ forceSlug }) {
   // Upgrade state
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradePlanSelected, setUpgradePlanSelected] = useState('Anual ($40.000)');
+
+  // Upload state
+  const [isUploading, setIsUploading] = useState(false);
 
   // Link de referido
   const referralLink = `${window.location.protocol}//${window.location.host}/register?ref=${storeSlug}`;
@@ -153,6 +157,23 @@ export default function StoreAdmin({ forceSlug }) {
     await loadData();
   };
 
+  const handleImageUpload = async (e, setter) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+      const compressedFile = await compressImage(file);
+      const publicUrl = await uploadImage(compressedFile);
+      setter(publicUrl);
+    } catch (err) {
+      showPopup('Error', 'No se pudo subir la imagen.', 'error');
+      console.error(err);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleAddProductClick = () => {
     setEditingProduct({
       name: '',
@@ -252,6 +273,32 @@ export default function StoreAdmin({ forceSlug }) {
         <div className="glass-panel" style={{ padding: '32px', maxWidth: '600px' }}>
           <h2>Configuración General</h2>
           <form onSubmit={handleUpdateStore} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '24px' }}>
+            
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <label style={{ display: 'block', marginBottom: '8px' }}>Logo de la Tienda</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <img src={store.logoUrl} alt="Logo" style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover' }} />
+                  <label className="btn btn-outline" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Upload size={16} /> {isUploading ? 'Subiendo...' : 'Subir Logo'}
+                    <input type="file" accept="image/*" style={{ display: 'none' }} disabled={isUploading} onChange={(e) => handleImageUpload(e, (url) => setStore({...store, logoUrl: url}))} />
+                  </label>
+                </div>
+              </div>
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <label style={{ display: 'block', marginBottom: '8px' }}>Banner Principal</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <img src={store.bannerUrl} alt="Banner" style={{ width: '100%', height: '80px', borderRadius: '8px', objectFit: 'cover' }} />
+                  <label className="btn btn-outline" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', alignSelf: 'flex-start' }}>
+                    <Upload size={16} /> {isUploading ? 'Subiendo...' : 'Subir Banner'}
+                    <input type="file" accept="image/*" style={{ display: 'none' }} disabled={isUploading} onChange={(e) => handleImageUpload(e, (url) => setStore({...store, bannerUrl: url}))} />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <hr style={{ borderColor: 'var(--border-color)', margin: '16px 0' }} />
+
             <div>
               <label style={{ display: 'block', marginBottom: '8px' }}>Nombre</label>
               <input type="text" value={store.name || ''} onChange={e => setStore({...store, name: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white' }} />
@@ -685,16 +732,23 @@ export default function StoreAdmin({ forceSlug }) {
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Image size={16} /> URL de Imagen
+                    <Image size={16} /> Imagen del Producto
                   </label>
-                  <input type="text" value={editingProduct.imageUrl} onChange={e => setEditingProduct({...editingProduct, imageUrl: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white' }} />
+                  
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                    <label className="btn btn-outline" style={{ flex: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                      <Upload size={18} /> {isUploading ? 'Subiendo...' : 'Subir Foto'}
+                      <input type="file" accept="image/*" style={{ display: 'none' }} disabled={isUploading} onChange={(e) => handleImageUpload(e, (url) => setEditingProduct({...editingProduct, imageUrl: url}))} />
+                    </label>
+                  </div>
+                  <input type="text" placeholder="O pega una URL de imagen..." value={editingProduct.imageUrl} onChange={e => setEditingProduct({...editingProduct, imageUrl: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white' }} />
                   {editingProduct.imageUrl && (
                     <img src={editingProduct.imageUrl} alt="Preview" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', marginTop: '12px' }} />
                   )}
                 </div>
 
-                <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '8px', padding: '12px' }}>
-                  Guardar Producto
+                <button type="submit" className="btn btn-primary" disabled={isUploading} style={{ width: '100%', marginTop: '8px', padding: '12px', opacity: isUploading ? 0.5 : 1 }}>
+                  {editingProduct.id ? 'Actualizar Producto' : 'Crear Producto'}
                 </button>
               </form>
             </div>

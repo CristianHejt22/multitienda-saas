@@ -222,3 +222,20 @@ export const updateOrderStatus = async (id, status) => {
   const { error } = await supabase.from('orders').update({ status }).eq('id', id);
   if (error) console.error(error);
 };
+
+// --- Storage API ---
+export const uploadImage = async (file) => {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+  const filePath = `${fileName}`;
+
+  const { error: uploadError } = await supabase.storage.from('images').upload(filePath, file);
+
+  if (uploadError) {
+    console.error('Error al subir imagen:', uploadError);
+    throw uploadError;
+  }
+
+  const { data } = supabase.storage.from('images').getPublicUrl(filePath);
+  return data.publicUrl;
+};
