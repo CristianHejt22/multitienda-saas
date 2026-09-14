@@ -1,31 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { getStores, deleteStore, addStore, getRequests, deleteRequest, getStoreBySlug, updateStore } from '../dataManager';
-import { Trash2, ExternalLink, Settings, PlusCircle, CheckCircle, Clock, MessageCircle } from 'lucide-react';
+import { getStores, deleteStore, addStore, getRequests, deleteRequest, getStoreBySlug, updateStore, getAllOrdersCount } from '../dataManager';
+import { Trash2, ExternalLink, Settings, PlusCircle, CheckCircle, Clock, MessageCircle, Pencil, X, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { usePopup } from '../context/PopupContext';
 
 export default function SuperAdmin() {
   const [stores, setStores] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [totalOrders, setTotalOrders] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newStore, setNewStore] = useState({ name: '', whatsappNumber: '', description: '' });
   const [loading, setLoading] = useState(true);
   const { showPopup } = usePopup();
 
+  // Autenticación de SuperAdmin
+  const [isAuthenticated, setIsAuthenticated] = useState(sessionStorage.getItem('superadmin_auth') === 'true');
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [loginError, setLoginError] = useState('');
+
+  // Edición de tienda
+  const [editingStore, setEditingStore] = useState(null);
+
   const loadData = async () => {
     setLoading(true);
-    const [dbStores, dbRequests] = await Promise.all([
-      getStores(),
-      getRequests()
-    ]);
-    setStores(dbStores);
-    setRequests(dbRequests);
+    if (isAuthenticated) {
+      const [dbStores, dbRequests, ordersCount] = await Promise.all([
+        getStores(),
+        getRequests(),
+        getAllOrdersCount()
+      ]);
+      setStores(dbStores);
+      setRequests(dbRequests);
+      setTotalOrders(ordersCount);
+    }
     setLoading(false);
   };
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [isAuthenticated]);
 
   const handleDelete = async (id) => {
     if (window.confirm("¿Seguro que deseas eliminar esta tienda y todo su contenido?")) {
@@ -110,7 +123,77 @@ export default function SuperAdmin() {
     }
   };
 
+  const handleSaveStore = async (e) => {
+    e.preventDefault();
+    await updateStore(editingStore.id, {
+      name: editingStore.name,
+      whatsappNumber: editingStore.whatsappNumber,
+      slug: editingStore.slug,
+      password: editingStore.password
+    });
+    setEditingStore(null);
+    showPopup('Tienda Actualizada', 'Los datos de la tienda han sido modificados exitosamente.', 'success');
+    await loadData();
+  };
+
   if (loading) return <div className="container" style={{ textAlign: 'center', paddingTop: '40px', color: 'white' }}>Cargando panel...</div>;
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    const adminUser = import.meta.env.VITE_SUPERADMIN_USER || 'admin';
+    const adminPass = import.meta.env.VITE_SUPERADMIN_PASS || 'admin123';
+    
+    if (loginForm.username === adminUser && loginForm.password === adminPass) {
+      setLoginError('');
+      sessionStorage.setItem('superadmin_auth', 'true');
+      setIsAuthenticated(true);
+    } else {
+      setLoginError('Credenciales incorrectas.');
+    }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('superadmin_auth');
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <div className="glass-panel animate-fade-in" style={{ padding: '40px', maxWidth: '400px', width: '100%', textAlign: 'center' }}>
+          <h2 style={{ marginBottom: '8px' }}>SuperAdmin</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>Ingresa tus credenciales de administrador global</p>
+          
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Usuario</label>
+              <input 
+                required 
+                type="text" 
+                placeholder="admin" 
+                value={loginForm.username} 
+                onChange={e => setLoginForm({...loginForm, username: e.target.value})} 
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white' }} 
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Contraseña</label>
+              <input 
+                required 
+                type="password" 
+                placeholder="********" 
+                value={loginForm.password} 
+                onChange={e => setLoginForm({...loginForm, password: e.target.value})} 
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white' }} 
+              />
+            </div>
+            {loginError && <div style={{ color: '#ef4444', fontSize: '0.9rem', textAlign: 'center' }}>{loginError}</div>}
+            <button type="submit" className="btn btn-primary" style={{ marginTop: '16px', padding: '14px', fontSize: '1.1rem' }}>Ingresar</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   const sendWhatsAppWelcome = (store) => {
     if (!store.whatsappNumber) {
@@ -124,11 +207,14 @@ export default function SuperAdmin() {
 
   return (
     <div className="container" style={{ paddingTop: '40px', paddingBottom: '64px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <h1>Panel de Control Global (Privado)</h1>
-        <button className="btn btn-primary" onClick={() => setShowAddForm(!showAddForm)}>
-          <PlusCircle size={20} /> Crear Tienda Aprobada
-        </button>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <button className="btn btn-primary" onClick={() => setShowAddForm(!showAddForm)}>
+            <PlusCircle size={20} /> Crear Tienda Aprobada
+          </button>
+          <button className="btn btn-outline" onClick={handleLogout} style={{ borderColor: '#ef4444', color: '#ef4444' }}>Salir</button>
+        </div>
       </div>
       
       {showAddForm && (
@@ -150,12 +236,17 @@ export default function SuperAdmin() {
 
       <div className="grid-responsive" style={{ marginBottom: '40px' }}>
         <div className="glass-panel" style={{ padding: '24px', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '3rem', color: 'var(--accent-color)' }}>{stores.length}</h2>
+          <h2 style={{ fontSize: '3rem', color: 'var(--accent-color)', margin: '0' }}>{stores.length}</h2>
           <p style={{ color: 'var(--text-secondary)' }}>Tiendas Activas</p>
         </div>
         <div className="glass-panel" style={{ padding: '24px', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '3rem', color: '#eab308' }}>{requests.length}</h2>
+          <h2 style={{ fontSize: '3rem', color: '#eab308', margin: '0' }}>{requests.length}</h2>
           <p style={{ color: 'var(--text-secondary)' }}>Solicitudes Pendientes</p>
+        </div>
+        <div className="glass-panel" style={{ padding: '24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <ShoppingBag size={48} color="#22c55e" style={{ marginBottom: '12px' }} />
+          <h2 style={{ fontSize: '2rem', margin: '0', color: '#22c55e' }}>{totalOrders}</h2>
+          <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>Pedidos Globales Creados</p>
         </div>
       </div>
 
@@ -247,6 +338,9 @@ export default function SuperAdmin() {
                     <Link to={`/${store.slug}/admin`} className="btn btn-outline" style={{ padding: '8px' }} title="Administrar tienda">
                       <Settings size={16} />
                     </Link>
+                    <button className="btn btn-outline" style={{ padding: '8px', color: '#3b82f6', borderColor: 'transparent' }} onClick={() => setEditingStore(store)} title="Editar Tienda">
+                      <Pencil size={16} />
+                    </button>
                     <button className="btn btn-outline" style={{ padding: '8px', color: '#10b981', borderColor: 'transparent' }} onClick={() => sendWhatsAppWelcome(store)} title="Enviar Accesos por WhatsApp">
                       <MessageCircle size={16} />
                     </button>
@@ -260,6 +354,41 @@ export default function SuperAdmin() {
           </tbody>
         </table>
       </div>
+
+      {editingStore && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+          <div className="glass-panel animate-fade-in" style={{ padding: '32px', maxWidth: '500px', width: '90%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h2 style={{ margin: 0 }}>Editar Tienda</h2>
+              <button onClick={() => setEditingStore(null)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}>
+                <X size={24} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSaveStore} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Nombre de la Tienda</label>
+                <input required type="text" value={editingStore.name} onChange={e => setEditingStore({...editingStore, name: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Slug (URL)</label>
+                <input required type="text" value={editingStore.slug} onChange={e => setEditingStore({...editingStore, slug: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>WhatsApp</label>
+                <input required type="text" value={editingStore.whatsappNumber} onChange={e => setEditingStore({...editingStore, whatsappNumber: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Contraseña de Administrador</label>
+                <input required type="text" value={editingStore.password} onChange={e => setEditingStore({...editingStore, password: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white' }} />
+              </div>
+              <button type="submit" className="btn btn-primary" style={{ marginTop: '16px', padding: '14px', fontSize: '1.1rem' }}>
+                Guardar Cambios
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

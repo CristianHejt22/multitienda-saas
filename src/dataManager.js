@@ -195,6 +195,12 @@ export const getOrdersByStore = async (storeId) => {
   return data ? data.map(o => ({...o, storeId: o.store_id, customerName: o.customer_name, customerPhone: o.customer_phone})) : [];
 };
 
+export const getAllOrdersCount = async () => {
+  const { count, error } = await supabase.from('orders').select('*', { count: 'exact', head: true });
+  if (error) console.error(error);
+  return count || 0;
+};
+
 export const addOrder = async (orderData) => {
   const dbData = {
     store_id: orderData.storeId,
