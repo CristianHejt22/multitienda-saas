@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getStoreBySlug, getProductsByStore } from '../dataManager';
-import { ChevronLeft, ShoppingCart, Share2, Facebook, MessageCircle, Twitter } from 'lucide-react';
+import { ChevronLeft, ShoppingCart, Share2, MessageCircle } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import Cart from '../components/Cart';
 import VariantSelector from '../components/VariantSelector';
@@ -184,7 +184,7 @@ export default function ProductDetail({ forceSlug }) {
                     <MessageCircle size={18} /> WhatsApp
                   </a>
                   <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ borderColor: '#1877F2', color: '#1877F2', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px' }}>
-                    <Facebook size={18} /> Facebook
+                    Facebook
                   </a>
                   <button onClick={handleShare} className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px' }}>
                     <Share2 size={18} /> Compartir Enlace
