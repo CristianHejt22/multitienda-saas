@@ -9,6 +9,7 @@ import ProductDetail from './pages/ProductDetail';
 import { CartProvider } from './context/CartContext';
 import { PopupProvider, usePopup } from './context/PopupContext';
 import { getStores } from './dataManager';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import './index.css';
 import { Store } from 'lucide-react';
 
@@ -80,7 +81,7 @@ function AppRouter() {
       <Routes>
         <Route path="/" element={<StoreView forceSlug={customStoreSlug} />} />
         <Route path="/p/:productId" element={<ProductDetail forceSlug={customStoreSlug} />} />
-        <Route path="/admin" element={<StoreAdmin forceSlug={customStoreSlug} />} />
+        <Route path="/admin" element={<ErrorBoundary><StoreAdmin forceSlug={customStoreSlug} /></ErrorBoundary>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -97,7 +98,7 @@ function AppRouter() {
         {/* Rutas normales de plataforma */}
         <Route path="/:storeSlug" element={<StoreView />} />
         <Route path="/:storeSlug/p/:productId" element={<ProductDetail />} />
-        <Route path="/:storeSlug/admin" element={<StoreAdmin />} />
+        <Route path="/:storeSlug/admin" element={<ErrorBoundary><StoreAdmin /></ErrorBoundary>} />
       </Routes>
     </>
   );

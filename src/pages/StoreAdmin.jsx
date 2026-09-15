@@ -72,6 +72,12 @@ export default function StoreAdmin({ forceSlug }) {
     loadData();
   }, [storeSlug, isAuthenticated]);
 
+  useEffect(() => {
+    if (activeTab === 'marketing' && marketingSelectedProduct) {
+      drawPost();
+    }
+  }, [activeTab, marketingSelectedProduct, products]);
+
   if (loading) return <div className="container" style={{ textAlign: 'center', paddingTop: '100px', color: 'white' }}>Cargando panel...</div>;
 
   if (!store) return (
@@ -305,11 +311,7 @@ export default function StoreAdmin({ forceSlug }) {
     img.src = product.imageUrl || 'https://via.placeholder.com/800';
   };
 
-  useEffect(() => {
-    if (activeTab === 'marketing' && marketingSelectedProduct) {
-      drawPost();
-    }
-  }, [activeTab, marketingSelectedProduct, products]);
+
 
   const handleDownloadPost = () => {
     const canvas = canvasRef.current;
@@ -764,9 +766,9 @@ export default function StoreAdmin({ forceSlug }) {
                 {orders.map(order => (
                   <tr key={order.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background-color 0.2s' }} className="table-row-hover">
                     <td style={{ padding: '16px' }}>
-                      <div style={{ fontWeight: 'bold' }}>{new Date(order.created_at).toLocaleDateString()}</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{new Date(order.created_at).toLocaleTimeString()}</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '4px' }}>#{order.id.split('-')[0]}</div>
+                      <div style={{ fontWeight: 'bold' }}>{order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{order.created_at ? new Date(order.created_at).toLocaleTimeString() : ''}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '4px' }}>#{String(order.id).split('-')[0]}</div>
                     </td>
                     <td style={{ padding: '16px' }}>
                       <div style={{ fontWeight: 'bold' }}>{order.customerName}</div>
@@ -774,13 +776,13 @@ export default function StoreAdmin({ forceSlug }) {
                     </td>
                     <td style={{ padding: '16px' }}>
                       <div style={{ fontSize: '0.9rem' }}>
-                        {order.items.map((item, i) => (
-                          <div key={i}>{item.quantity}x {item.product.name}</div>
+                        {(Array.isArray(typeof order.items === 'string' ? JSON.parse(order.items || '[]') : order.items) ? (typeof order.items === 'string' ? JSON.parse(order.items || '[]') : order.items) : []).map((item, i) => (
+                          <div key={i}>{item?.quantity}x {item?.product?.name || 'Producto'}</div>
                         ))}
                       </div>
                     </td>
                     <td style={{ padding: '16px', fontWeight: 'bold', color: store.themeColor }}>
-                      ${order.total.toFixed(2)}
+                      ${(Number(order.total) || 0).toFixed(2)}
                     </td>
                     <td style={{ padding: '16px' }}>
                       <select 
@@ -854,9 +856,9 @@ export default function StoreAdmin({ forceSlug }) {
                         <img src={product.imageUrl} alt={product.name} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-color)' }} />
                       </td>
                       <td style={{ padding: '16px', fontWeight: 'bold' }}>{product.name}</td>
-                      <td style={{ padding: '16px' }}>${product.price.toFixed(2)}</td>
+                      <td style={{ padding: '16px' }}>${(Number(product.price) || 0).toFixed(2)}</td>
                       <td style={{ padding: '16px', color: '#ef4444' }}>
-                        {product.compareAtPrice ? `$${product.compareAtPrice.toFixed(2)}` : '-'}
+                        {product.compareAtPrice ? `$${(Number(product.compareAtPrice) || 0).toFixed(2)}` : '-'}
                       </td>
                       <td style={{ padding: '16px', textAlign: 'right' }}>
                         <button className="btn btn-outline" style={{ padding: '8px', marginRight: '8px', borderColor: 'transparent' }} onClick={() => setEditingProduct(product)}>

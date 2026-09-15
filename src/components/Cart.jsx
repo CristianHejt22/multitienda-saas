@@ -46,10 +46,10 @@ export default function Cart({ store }) {
           }
           msg += `\n`;
         }
-        msg += `   Subtotal: $${(item.product.price * item.quantity).toFixed(2)}\n\n`;
+        msg += `   Subtotal: $${(Number(item.product.price * item.quantity) || 0).toFixed(2)}\n\n`;
       });
 
-      msg += `💳 *TOTAL: $${cartTotal.toFixed(2)}*\n\n`;
+      msg += `💳 *TOTAL: $${(Number(cartTotal) || 0).toFixed(2)}*\n\n`;
       msg += `Por favor, envíame los datos para realizar el pago. ¡Gracias!`;
 
       const encodedMessage = encodeURIComponent(msg);
@@ -107,7 +107,7 @@ export default function Cart({ store }) {
                     </p>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontWeight: 'bold', color: 'var(--accent-color)' }}>
-                        ${(item.product.price * item.quantity).toFixed(2)}
+                        ${(Number(item.product.price * item.quantity) || 0).toFixed(2)}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-secondary)', borderRadius: '4px', padding: '2px 4px' }}>
                         <button onClick={() => updateQuantity(item.cartItemId, item.quantity - 1)} style={{ color: 'white' }}><Minus size={14} /></button>
@@ -130,7 +130,7 @@ export default function Cart({ store }) {
           <div style={{ padding: '20px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-secondary)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', fontSize: '1.2rem', fontWeight: 'bold' }}>
               <span>Total:</span>
-              <span>${cartTotal.toFixed(2)}</span>
+              <span>${(Number(cartTotal) || 0).toFixed(2)}</span>
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

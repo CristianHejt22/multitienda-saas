@@ -117,11 +117,11 @@ export default function ProductDetail({ forceSlug }) {
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
               <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: store.themeColor }}>
-                ${product.price.toFixed(2)}
+                ${(Number(product.price) || 0).toFixed(2)}
               </div>
               {isSale && (
                 <div style={{ fontSize: '1.5rem', color: 'var(--text-secondary)', textDecoration: 'line-through' }}>
-                  ${product.compareAtPrice.toFixed(2)}
+                  ${(Number(product.compareAtPrice) || 0).toFixed(2)}
                 </div>
               )}
             </div>

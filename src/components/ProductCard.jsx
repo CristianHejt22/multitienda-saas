@@ -27,11 +27,11 @@ export default function ProductCard({ product, storeSlug }) {
           
           <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              ${product.price.toFixed(2)}
+              ${(Number(product.price) || 0).toFixed(2)}
             </span>
             {isSale && (
               <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', textDecoration: 'line-through' }}>
-                ${product.compareAtPrice.toFixed(2)}
+                ${(Number(product.compareAtPrice) || 0).toFixed(2)}
               </span>
             )}
           </div>
