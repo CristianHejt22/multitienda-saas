@@ -328,7 +328,7 @@ export default function StoreAdmin({ forceSlug }) {
       ctx.fill();
       ctx.clip();
       
-      const scale = Math.max(840 / img.width, 580 / img.height);
+      const scale = Math.min(840 / img.width, 580 / img.height);
       const scaledW = img.width * scale;
       const scaledH = img.height * scale;
       const x = 120 + (840 / 2) - (scaledW / 2);
