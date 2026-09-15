@@ -292,53 +292,39 @@ export default function StoreAdmin({ forceSlug }) {
       img.src = src;
     });
     
-    // 1. Cargar Imágenes (Logo y Producto)
+    // 1. Fondo Premium
+    const primaryColor = store.themeColor || '#6366f1';
+    const gradient = ctx.createLinearGradient(0, 0, 1080, 1080);
+    gradient.addColorStop(0, primaryColor);
+    gradient.addColorStop(1, '#0f172a');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 1080, 1080);
+
+    ctx.beginPath();
+    ctx.arc(1080, 0, 700, 0, 2 * Math.PI);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+    ctx.fill();
+
+    // 2. Tarjeta del Producto (Marco reducido, imagen más grande)
+    const cardX = 60, cardY = 60, cardW = 960, cardH = 960;
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 20;
+    ctx.fillStyle = '#ffffff';
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 48);
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+
+    // 3. Cargar Imágenes (Logo y Producto)
     const [logoImg, productImg] = await Promise.all([
       loadImage(store.logoUrl),
       loadImage(product.imageUrl || 'https://via.placeholder.com/800')
     ]);
 
-    const primaryColor = store.themeColor || '#6366f1';
-
-    // 2. Fondo Ambiental Premium (Blureado si hay imagen, sino gradiente)
+    // 4. Dibujar Imagen del Producto
     if (productImg) {
       ctx.save();
-      ctx.filter = 'blur(60px)';
-      ctx.drawImage(productImg, -100, -100, 1280, 1280);
-      ctx.filter = 'none';
-      ctx.restore();
-      
-      // Capa oscura para resaltar la tarjeta central
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
-      ctx.fillRect(0, 0, 1080, 1080);
-    } else {
-      const gradient = ctx.createLinearGradient(0, 0, 1080, 1080);
-      gradient.addColorStop(0, primaryColor);
-      gradient.addColorStop(1, '#0f172a');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, 1080, 1080);
-    }
-
-    // Decoración de fondo sutil
-    ctx.beginPath();
-    ctx.arc(1080, 0, 700, 0, 2 * Math.PI);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-    ctx.fill();
-
-    // 3. Tarjeta del Producto (Estilo limpio, con sombra suave)
-    const cardX = 80, cardY = 120, cardW = 920, cardH = 820;
-    
-    ctx.shadowColor = 'rgba(0,0,0,0.3)';
-    ctx.shadowBlur = 60;
-    ctx.shadowOffsetY = 30;
-    ctx.fillStyle = '#ffffff';
-    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 40);
-    ctx.fill();
-    ctx.shadowColor = 'transparent'; // reset
-
-    if (productImg) {
-      ctx.save();
-      drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 40);
+      drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 48);
       ctx.clip();
       
       const scale = Math.min(cardW / productImg.width, cardH / productImg.height);
@@ -349,92 +335,79 @@ export default function StoreAdmin({ forceSlug }) {
       
       ctx.drawImage(productImg, x, y, scaledW, scaledH);
       ctx.restore();
+    } else {
+      ctx.fillStyle = '#f1f5f9';
+      drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 48);
+      ctx.fill();
     }
 
-    // 4. Panel de Información (Estilo Minimalista en la parte inferior)
-    const panelX = 80, panelY = 820, panelW = 920, panelH = 180; // Solapa la parte inferior
-    ctx.shadowColor = 'rgba(0,0,0,0.15)';
-    ctx.shadowBlur = 30;
-    ctx.shadowOffsetY = -10;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
-    drawRoundedRect(ctx, panelX, panelY, panelW, panelH, 40);
-    ctx.fill();
-    ctx.shadowColor = 'transparent';
+    // 5. Textos superpuestos con reborde
+    const drawTextWithOutline = (text, x, y, font, fillColor, strokeColor, lineWidth = 8) => {
+      ctx.font = font;
+      ctx.textAlign = 'center';
+      ctx.lineJoin = 'round';
+      ctx.miterLimit = 2;
+      ctx.lineWidth = lineWidth;
+      ctx.strokeStyle = strokeColor;
+      ctx.strokeText(text, x, y);
+      ctx.fillStyle = fillColor;
+      ctx.fillText(text, x, y);
+    };
 
-    // 5. Textos (Nombre del Producto y Precio)
-    ctx.fillStyle = '#1e293b'; // Slate 800 - Muy elegante
-    ctx.font = '800 48px "Inter", sans-serif';
-    ctx.textAlign = 'left';
+    // Nombre del Producto (Superpuesto abajo)
     let text = product.name;
-    if (text.length > 25) text = text.substring(0, 22) + '...';
-    ctx.fillText(text, panelX + 60, panelY + 110); // Centrado verticalmente aprox
+    if (text.length > 30) text = text.substring(0, 27) + '...';
+    drawTextWithOutline(text, 540, 840, '900 64px "Inter", sans-serif', '#ffffff', primaryColor, 12);
 
-    // Lógica de Precios
+    // Precios
     const hasOffer = product.compareAtPrice && product.compareAtPrice > product.price;
-    ctx.textAlign = 'right';
+    const priceY = 940;
 
     if (hasOffer) {
-      // Precio original arriba, tachado
+      // Precio original más chico
       const oldPrice = `$${(Number(product.compareAtPrice)||0).toFixed(2)}`;
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '700 36px "Inter", sans-serif';
-      const oldPriceW = ctx.measureText(oldPrice).width;
-      ctx.fillText(oldPrice, panelX + panelW - 60, panelY + 80);
+      drawTextWithOutline(oldPrice, 380, priceY, 'bold 48px "Inter", sans-serif', '#e2e8f0', '#ef4444', 8);
       
+      // Tachado
+      const oldPriceWidth = ctx.measureText(oldPrice).width;
       ctx.beginPath();
-      ctx.moveTo(panelX + panelW - 60 - oldPriceW - 10, panelY + 68);
-      ctx.lineTo(panelX + panelW - 60 + 10, panelY + 68);
+      ctx.moveTo(380 - oldPriceWidth/2 - 10, priceY - 16);
+      ctx.lineTo(380 + oldPriceWidth/2 + 10, priceY - 16);
       ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 6;
       ctx.stroke();
 
       // Precio oferta normal
-      ctx.fillStyle = primaryColor;
-      ctx.font = '900 64px "Inter", sans-serif';
-      ctx.fillText(`$${(Number(product.price)||0).toFixed(2)}`, panelX + panelW - 60, panelY + 140);
+      drawTextWithOutline(`$${(Number(product.price)||0).toFixed(2)}`, 680, priceY, '900 84px "Inter", sans-serif', '#ffffff', '#0f172a', 14);
       
-      // Etiqueta ¡OFERTA! (Flotando arriba a la derecha de la tarjeta)
-      ctx.shadowColor = 'rgba(239, 68, 68, 0.4)';
-      ctx.shadowBlur = 20;
-      ctx.shadowOffsetY = 10;
-      ctx.fillStyle = '#ef4444';
-      drawRoundedRect(ctx, cardX + cardW - 240, cardY - 30, 270, 80, 40);
-      ctx.fill();
-      ctx.shadowColor = 'transparent';
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 32px "Inter", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('¡OFERTA!', cardX + cardW - 105, cardY + 22);
+      // Etiqueta ¡OFERTA!
+      drawTextWithOutline('¡OFERTA!', 540, 160, '900 72px "Inter", sans-serif', '#ef4444', '#ffffff', 14);
     } else {
-      // Precio normal (Centrado verticalmente en el panel)
-      ctx.fillStyle = primaryColor;
-      ctx.font = '900 64px "Inter", sans-serif';
-      ctx.fillText(`$${(Number(product.price)||0).toFixed(2)}`, panelX + panelW - 60, panelY + 115);
+      // Precio normal centrado
+      drawTextWithOutline(`$${(Number(product.price)||0).toFixed(2)}`, 540, priceY, '900 84px "Inter", sans-serif', '#ffffff', '#0f172a', 14);
     }
 
-    // 6. Logo de la Tienda
+    // 6. Logo de la Tienda (Superpuesto arriba a la derecha o centro)
     if (logoImg) {
       ctx.save();
-      const logoSize = 100;
-      const logoX = cardX - 20;
-      const logoY = cardY - 40;
+      const logoSize = 120;
+      const logoX = cardX + cardW - logoSize - 40;
+      const logoY = cardY + 40;
       
+      // Fondo circular blanco para el logo
       ctx.beginPath();
-      ctx.arc(logoX + logoSize/2, logoY + logoSize/2, logoSize/2 + 5, 0, Math.PI * 2);
+      ctx.arc(logoX + logoSize/2, logoY + logoSize/2, logoSize/2 + 10, 0, Math.PI * 2);
       ctx.fillStyle = '#ffffff';
       ctx.shadowColor = 'rgba(0,0,0,0.3)';
       ctx.shadowBlur = 15;
       ctx.fill();
-      ctx.clip(); 
+      ctx.clip(); // Recortar logo circular
       
       ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
       ctx.restore();
     } else {
-      // Si no hay logo, mostrar nombre de la tienda sutil arriba
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.font = 'bold 36px "Inter", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(store.name.toUpperCase(), 540, 70);
+      // Fallback a texto si no hay logo
+      drawTextWithOutline(store.name.toUpperCase(), 540, 140, 'bold 48px "Inter", sans-serif', '#ffffff', 'rgba(0,0,0,0.5)', 8);
     }
   };
 

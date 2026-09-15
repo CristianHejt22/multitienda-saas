@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getStoreBySlug, getProductsByStore } from '../dataManager';
-import { ChevronLeft, ShoppingCart, Share2 } from 'lucide-react';
+import { ChevronLeft, ShoppingCart, Share2, Facebook, MessageCircle, Twitter } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import Cart from '../components/Cart';
 import VariantSelector from '../components/VariantSelector';
@@ -106,12 +106,9 @@ export default function ProductDetail({ forceSlug }) {
       </button>
 
       {/* Header */}
-      <div style={{ padding: '20px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ padding: '20px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>
         <button onClick={() => navigate(-1)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ChevronLeft size={24} /> Volver al catálogo
-        </button>
-        <button onClick={handleShare} className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px' }}>
-          <Share2 size={18} /> Compartir
         </button>
       </div>
 
@@ -135,9 +132,7 @@ export default function ProductDetail({ forceSlug }) {
                 <span style={{ background: '#ef4444', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '1rem', fontWeight: 'bold' }}>OFERTA</span>
               )}
             </h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '1.2rem', lineHeight: '1.6', marginBottom: '24px' }}>
-              {product.description}
-            </p>
+            
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
               <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: store.themeColor }}>
                 ${(Number(product.price) || 0).toFixed(2)}
@@ -174,15 +169,43 @@ export default function ProductDetail({ forceSlug }) {
                   opacity: !allVariantsSelected ? 0.6 : 1, 
                   cursor: !allVariantsSelected ? 'not-allowed' : 'pointer',
                   backgroundColor: store.themeColor,
-                  color: 'white'
+                  color: 'white',
+                  marginBottom: '24px'
                 }}
               >
                 <ShoppingCart size={24} style={{ marginRight: '8px' }} />
                 Agregar al Carrito
               </button>
+
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>Compartir este producto:</p>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  <a href={`https://api.whatsapp.com/send?text=${encodeURIComponent('Mira este producto: ' + product.name + ' ' + window.location.href)}`} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ borderColor: '#25D366', color: '#25D366', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px' }}>
+                    <MessageCircle size={18} /> WhatsApp
+                  </a>
+                  <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ borderColor: '#1877F2', color: '#1877F2', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px' }}>
+                    <Facebook size={18} /> Facebook
+                  </a>
+                  <button onClick={handleShare} className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px' }}>
+                    <Share2 size={18} /> Compartir Enlace
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Sección de Descripción debajo */}
+        {product.description && (
+          <div style={{ marginTop: '60px', padding: '40px', background: 'var(--bg-secondary)', borderRadius: '24px' }}>
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              Descripción del Producto
+            </h2>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', lineHeight: '1.8', whiteSpace: 'pre-wrap' }}>
+              {product.description}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
