@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getStoreBySlug, getProductsByStore } from '../dataManager';
-import { ChevronLeft, ShoppingCart } from 'lucide-react';
+import { ChevronLeft, ShoppingCart, Share2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import Cart from '../components/Cart';
 import VariantSelector from '../components/VariantSelector';
+import { usePopup } from '../context/PopupContext';
 
 export default function ProductDetail({ forceSlug }) {
   const params = useParams();
@@ -18,6 +19,7 @@ export default function ProductDetail({ forceSlug }) {
   const [loading, setLoading] = useState(true);
   
   const { addToCart, toggleCart, cartCount } = useCart();
+  const { showPopup } = usePopup();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -61,6 +63,24 @@ export default function ProductDetail({ forceSlug }) {
     toggleCart();
   };
 
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product.name,
+          text: `Mira este producto: ${product.name}`,
+          url: url,
+        });
+      } catch (err) {
+        console.error('Error sharing:', err);
+      }
+    } else {
+      navigator.clipboard.writeText(url);
+      showPopup('Enlace copiado', 'El enlace del producto ha sido copiado al portapapeles.', 'success');
+    }
+  };
+
   return (
     <div style={{ paddingBottom: '60px' }}>
       <Cart store={store} />
@@ -86,9 +106,12 @@ export default function ProductDetail({ forceSlug }) {
       </button>
 
       {/* Header */}
-      <div style={{ padding: '20px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>
+      <div style={{ padding: '20px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <button onClick={() => navigate(-1)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ChevronLeft size={24} /> Volver al catálogo
+        </button>
+        <button onClick={handleShare} className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px' }}>
+          <Share2 size={18} /> Compartir
         </button>
       </div>
 

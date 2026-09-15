@@ -269,44 +269,111 @@ export default function StoreAdmin({ forceSlug }) {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     
-    // Set background
-    ctx.fillStyle = store.themeColor || '#6366f1';
+    // Helper para bordes redondeados
+    const drawRoundedRect = (c, x, y, width, height, radius) => {
+      c.beginPath();
+      c.moveTo(x + radius, y);
+      c.lineTo(x + width - radius, y);
+      c.quadraticCurveTo(x + width, y, x + width, y + radius);
+      c.lineTo(x + width, y + height - radius);
+      c.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      c.lineTo(x + radius, y + height);
+      c.quadraticCurveTo(x, y + height, x, y + height - radius);
+      c.lineTo(x, y + radius);
+      c.quadraticCurveTo(x, y, x + radius, y);
+      c.closePath();
+    };
+    
+    // 1. Fondo Premium con Gradiente
+    const primaryColor = store.themeColor || '#6366f1';
+    const gradient = ctx.createLinearGradient(0, 0, 1080, 1080);
+    gradient.addColorStop(0, primaryColor);
+    gradient.addColorStop(1, '#0f172a'); // Tono oscuro premium
+    ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 1080, 1080);
 
-    // Draw Store Name at top
+    // Decoración de fondo (Brillo suave)
+    ctx.beginPath();
+    ctx.arc(1080, 0, 700, 0, 2 * Math.PI);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+    ctx.fill();
+
+    // 2. Insignia de la Tienda (Arriba)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+    drawRoundedRect(ctx, 340, 60, 400, 80, 40);
+    ctx.fill();
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 64px sans-serif';
+    ctx.font = 'bold 34px "Inter", "Segoe UI", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(store.name.toUpperCase(), 540, 100);
+    ctx.fillText(store.name.toUpperCase(), 540, 114);
 
-    // Draw Price at bottom
+    // 3. Tarjeta del Producto (Efecto cristal/blanco)
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 50;
+    ctx.shadowOffsetY = 25;
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 96px sans-serif';
-    ctx.fillText(`$${product.price}`, 540, 1030);
+    drawRoundedRect(ctx, 120, 200, 840, 780, 48);
+    ctx.fill();
+    ctx.shadowColor = 'transparent'; // reset
 
-    // Draw product image
+    // 4. Cargar Imagen y dibujar contenido interno
     const img = new window.Image();
-    img.crossOrigin = "anonymous"; // Important for external URLs
+    img.crossOrigin = "anonymous";
     img.onload = () => {
-      // White background for the image
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(140, 140, 800, 800);
+      // Recortar la imagen para que coincida con los bordes redondeados superiores
+      ctx.save();
+      drawRoundedRect(ctx, 120, 200, 840, 580, 48);
+      // Rellenar el fondo de la imagen por si es PNG transparente
+      ctx.fillStyle = '#f8fafc';
+      ctx.fill();
+      ctx.clip();
       
-      const scale = Math.min(800 / img.width, 800 / img.height);
+      const scale = Math.max(840 / img.width, 580 / img.height);
       const scaledW = img.width * scale;
       const scaledH = img.height * scale;
-      const x = 140 + (800 / 2) - (scaledW / 2);
-      const y = 140 + (800 / 2) - (scaledH / 2);
+      const x = 120 + (840 / 2) - (scaledW / 2);
+      const y = 200 + (580 / 2) - (scaledH / 2);
       
       ctx.drawImage(img, x, y, scaledW, scaledH);
+      ctx.restore();
+
+      // Etiqueta de Oferta
+      if (product.compareAtPrice && product.compareAtPrice > product.price) {
+        ctx.shadowColor = 'rgba(239, 68, 68, 0.4)';
+        ctx.shadowBlur = 20;
+        ctx.shadowOffsetY = 10;
+        ctx.fillStyle = '#ef4444';
+        drawRoundedRect(ctx, 720, 160, 280, 80, 40);
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 36px "Inter", sans-serif';
+        ctx.fillText('¡OFERTA!', 860, 215);
+      }
+
+      // Nombre del Producto
+      ctx.fillStyle = '#1e293b'; // Texto oscuro
+      ctx.font = 'bold 52px "Inter", sans-serif';
+      let text = product.name;
+      if (text.length > 25) text = text.substring(0, 23) + '...';
+      ctx.fillText(text, 540, 870);
+
+      // Píldora de Precio
+      ctx.fillStyle = primaryColor;
+      drawRoundedRect(ctx, 390, 900, 300, 100, 50);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 56px "Inter", sans-serif';
+      ctx.fillText(`$${(Number(product.price)||0).toFixed(2)}`, 540, 970);
     };
     img.onerror = () => {
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(140, 140, 800, 800);
+      ctx.fillStyle = '#f1f5f9';
+      drawRoundedRect(ctx, 120, 200, 840, 580, 48);
+      ctx.fill();
       ctx.fillStyle = '#94a3b8';
-      ctx.font = '40px sans-serif';
+      ctx.font = '50px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('Sin Imagen', 540, 540);
+      ctx.fillText('Imagen no disponible', 540, 490);
     };
     img.src = product.imageUrl || 'https://via.placeholder.com/800';
   };
