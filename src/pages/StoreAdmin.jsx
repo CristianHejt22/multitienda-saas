@@ -261,7 +261,7 @@ export default function StoreAdmin({ forceSlug }) {
   };
 
   // --- Marketing Logic ---
-  const drawPost = () => {
+  const drawPost = async () => {
     if (!canvasRef.current || !marketingSelectedProduct) return;
     const product = products.find(p => p.id === marketingSelectedProduct);
     if (!product) return;
@@ -269,7 +269,6 @@ export default function StoreAdmin({ forceSlug }) {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     
-    // Helper para bordes redondeados
     const drawRoundedRect = (c, x, y, width, height, radius) => {
       c.beginPath();
       c.moveTo(x + radius, y);
@@ -283,99 +282,133 @@ export default function StoreAdmin({ forceSlug }) {
       c.quadraticCurveTo(x, y, x + radius, y);
       c.closePath();
     };
+
+    const loadImage = (src) => new Promise((resolve) => {
+      if (!src) return resolve(null);
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
     
-    // 1. Fondo Premium con Gradiente
+    // 1. Fondo Premium
     const primaryColor = store.themeColor || '#6366f1';
     const gradient = ctx.createLinearGradient(0, 0, 1080, 1080);
     gradient.addColorStop(0, primaryColor);
-    gradient.addColorStop(1, '#0f172a'); // Tono oscuro premium
+    gradient.addColorStop(1, '#0f172a');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 1080, 1080);
 
-    // Decoración de fondo (Brillo suave)
     ctx.beginPath();
     ctx.arc(1080, 0, 700, 0, 2 * Math.PI);
     ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
     ctx.fill();
 
-    // 2. Insignia de la Tienda (Arriba)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-    drawRoundedRect(ctx, 340, 60, 400, 80, 40);
-    ctx.fill();
+    // 2. Tarjeta del Producto (Marco reducido, imagen más grande)
+    const cardX = 60, cardY = 60, cardW = 960, cardH = 960;
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 20;
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 34px "Inter", "Segoe UI", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(store.name.toUpperCase(), 540, 114);
-
-    // 3. Tarjeta del Producto (Efecto cristal/blanco)
-    ctx.shadowColor = 'rgba(0,0,0,0.3)';
-    ctx.shadowBlur = 50;
-    ctx.shadowOffsetY = 25;
-    ctx.fillStyle = '#ffffff';
-    drawRoundedRect(ctx, 120, 200, 840, 780, 48);
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 48);
     ctx.fill();
-    ctx.shadowColor = 'transparent'; // reset
+    ctx.shadowColor = 'transparent';
 
-    // 4. Cargar Imagen y dibujar contenido interno
-    const img = new window.Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      // Recortar la imagen para que coincida con los bordes redondeados superiores
+    // 3. Cargar Imágenes (Logo y Producto)
+    const [logoImg, productImg] = await Promise.all([
+      loadImage(store.logoUrl),
+      loadImage(product.imageUrl || 'https://via.placeholder.com/800')
+    ]);
+
+    // 4. Dibujar Imagen del Producto
+    if (productImg) {
       ctx.save();
-      drawRoundedRect(ctx, 120, 200, 840, 580, 48);
-      // Rellenar el fondo de la imagen por si es PNG transparente
-      ctx.fillStyle = '#f8fafc';
-      ctx.fill();
+      drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 48);
       ctx.clip();
       
-      const scale = Math.min(840 / img.width, 580 / img.height);
-      const scaledW = img.width * scale;
-      const scaledH = img.height * scale;
-      const x = 120 + (840 / 2) - (scaledW / 2);
-      const y = 200 + (580 / 2) - (scaledH / 2);
+      const scale = Math.min(cardW / productImg.width, cardH / productImg.height);
+      const scaledW = productImg.width * scale;
+      const scaledH = productImg.height * scale;
+      const x = cardX + (cardW / 2) - (scaledW / 2);
+      const y = cardY + (cardH / 2) - (scaledH / 2);
       
-      ctx.drawImage(img, x, y, scaledW, scaledH);
+      ctx.drawImage(productImg, x, y, scaledW, scaledH);
       ctx.restore();
-
-      // Etiqueta de Oferta
-      if (product.compareAtPrice && product.compareAtPrice > product.price) {
-        ctx.shadowColor = 'rgba(239, 68, 68, 0.4)';
-        ctx.shadowBlur = 20;
-        ctx.shadowOffsetY = 10;
-        ctx.fillStyle = '#ef4444';
-        drawRoundedRect(ctx, 720, 160, 280, 80, 40);
-        ctx.fill();
-        ctx.shadowColor = 'transparent';
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '900 36px "Inter", sans-serif';
-        ctx.fillText('¡OFERTA!', 860, 215);
-      }
-
-      // Nombre del Producto
-      ctx.fillStyle = '#1e293b'; // Texto oscuro
-      ctx.font = 'bold 52px "Inter", sans-serif';
-      let text = product.name;
-      if (text.length > 25) text = text.substring(0, 23) + '...';
-      ctx.fillText(text, 540, 870);
-
-      // Píldora de Precio
-      ctx.fillStyle = primaryColor;
-      drawRoundedRect(ctx, 390, 900, 300, 100, 50);
-      ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 56px "Inter", sans-serif';
-      ctx.fillText(`$${(Number(product.price)||0).toFixed(2)}`, 540, 970);
-    };
-    img.onerror = () => {
+    } else {
       ctx.fillStyle = '#f1f5f9';
-      drawRoundedRect(ctx, 120, 200, 840, 580, 48);
+      drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 48);
       ctx.fill();
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '50px sans-serif';
+    }
+
+    // 5. Textos superpuestos con reborde
+    const drawTextWithOutline = (text, x, y, font, fillColor, strokeColor, lineWidth = 8) => {
+      ctx.font = font;
       ctx.textAlign = 'center';
-      ctx.fillText('Imagen no disponible', 540, 490);
+      ctx.lineJoin = 'round';
+      ctx.miterLimit = 2;
+      ctx.lineWidth = lineWidth;
+      ctx.strokeStyle = strokeColor;
+      ctx.strokeText(text, x, y);
+      ctx.fillStyle = fillColor;
+      ctx.fillText(text, x, y);
     };
-    img.src = product.imageUrl || 'https://via.placeholder.com/800';
+
+    // Nombre del Producto (Superpuesto abajo)
+    let text = product.name;
+    if (text.length > 30) text = text.substring(0, 27) + '...';
+    drawTextWithOutline(text, 540, 840, '900 64px "Inter", sans-serif', '#ffffff', primaryColor, 12);
+
+    // Precios
+    const hasOffer = product.compareAtPrice && product.compareAtPrice > product.price;
+    const priceY = 940;
+
+    if (hasOffer) {
+      // Precio original más chico
+      const oldPrice = `$${(Number(product.compareAtPrice)||0).toFixed(2)}`;
+      drawTextWithOutline(oldPrice, 380, priceY, 'bold 48px "Inter", sans-serif', '#e2e8f0', '#ef4444', 8);
+      
+      // Tachado
+      const oldPriceWidth = ctx.measureText(oldPrice).width;
+      ctx.beginPath();
+      ctx.moveTo(380 - oldPriceWidth/2 - 10, priceY - 16);
+      ctx.lineTo(380 + oldPriceWidth/2 + 10, priceY - 16);
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 6;
+      ctx.stroke();
+
+      // Precio oferta normal
+      drawTextWithOutline(`$${(Number(product.price)||0).toFixed(2)}`, 680, priceY, '900 84px "Inter", sans-serif', '#ffffff', '#0f172a', 14);
+      
+      // Etiqueta ¡OFERTA!
+      drawTextWithOutline('¡OFERTA!', 540, 160, '900 72px "Inter", sans-serif', '#ef4444', '#ffffff', 14);
+    } else {
+      // Precio normal centrado
+      drawTextWithOutline(`$${(Number(product.price)||0).toFixed(2)}`, 540, priceY, '900 84px "Inter", sans-serif', '#ffffff', '#0f172a', 14);
+    }
+
+    // 6. Logo de la Tienda (Superpuesto arriba a la derecha o centro)
+    if (logoImg) {
+      ctx.save();
+      const logoSize = 120;
+      const logoX = cardX + cardW - logoSize - 40;
+      const logoY = cardY + 40;
+      
+      // Fondo circular blanco para el logo
+      ctx.beginPath();
+      ctx.arc(logoX + logoSize/2, logoY + logoSize/2, logoSize/2 + 10, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0,0,0,0.3)';
+      ctx.shadowBlur = 15;
+      ctx.fill();
+      ctx.clip(); // Recortar logo circular
+      
+      ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+      ctx.restore();
+    } else {
+      // Fallback a texto si no hay logo
+      drawTextWithOutline(store.name.toUpperCase(), 540, 140, 'bold 48px "Inter", sans-serif', '#ffffff', 'rgba(0,0,0,0.5)', 8);
+    }
   };
 
 
