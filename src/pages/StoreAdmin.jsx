@@ -297,135 +297,125 @@ export default function StoreAdmin({ forceSlug }) {
     // 1. Fondo Premium con Gradiente
     const gradient = ctx.createLinearGradient(0, 0, 1080, 1080);
     gradient.addColorStop(0, primaryColor);
-    gradient.addColorStop(1, '#0f172a'); // Tono oscuro premium
+    gradient.addColorStop(1, '#0f172a'); 
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 1080, 1080);
 
-    // Decoración de fondo (Brillo suave)
     ctx.beginPath();
     ctx.arc(1080, 0, 700, 0, 2 * Math.PI);
     ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
     ctx.fill();
 
-    // Cargar Imágenes (Logo y Producto)
+    // 2. Tarjeta principal (Borde fino: 1000x1000, margen 40px)
+    const cardX = 40, cardY = 40, cardW = 1000, cardH = 1000;
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 20;
+    ctx.fillStyle = '#ffffff';
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 48);
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+
+    // Cargar Imágenes
     const [logoImg, productImg] = await Promise.all([
       loadImage(store.logoUrl),
       loadImage(product.imageUrl || 'https://via.placeholder.com/800')
     ]);
 
-    // 2. Insignia de la Tienda (Arriba)
-    if (logoImg) {
-      ctx.save();
-      const logoSize = 100;
-      ctx.beginPath();
-      ctx.arc(540, 100, logoSize/2 + 5, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-      ctx.clip();
-      ctx.drawImage(logoImg, 540 - logoSize/2, 100 - logoSize/2, logoSize, logoSize);
-      ctx.restore();
-    } else {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-      drawRoundedRect(ctx, 340, 60, 400, 80, 40);
-      ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 34px "Inter", "Segoe UI", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(store.name.toUpperCase(), 540, 114);
-    }
-
-    // 3. Tarjeta del Producto (Efecto cristal/blanco)
-    ctx.shadowColor = 'rgba(0,0,0,0.3)';
-    ctx.shadowBlur = 50;
-    ctx.shadowOffsetY = 25;
-    ctx.fillStyle = '#ffffff';
-    drawRoundedRect(ctx, 120, 200, 840, 780, 48);
-    ctx.fill();
-    ctx.shadowColor = 'transparent'; // reset
-
-    // 4. Dibujar Imagen del Producto
+    // 3. Dibujar Imagen del Producto (cubriendo casi toda la tarjeta, conteniendo)
     if (productImg) {
       ctx.save();
-      drawRoundedRect(ctx, 120, 200, 840, 580, 48);
-      ctx.fillStyle = '#f8fafc';
-      ctx.fill();
+      drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 48);
       ctx.clip();
       
-      const scale = Math.min(840 / productImg.width, 580 / productImg.height);
+      const scale = Math.min(cardW / productImg.width, cardH / productImg.height);
       const scaledW = productImg.width * scale;
       const scaledH = productImg.height * scale;
-      const x = 120 + (840 / 2) - (scaledW / 2);
-      const y = 200 + (580 / 2) - (scaledH / 2);
+      const x = cardX + (cardW / 2) - (scaledW / 2);
+      const y = cardY + (cardH / 2) - (scaledH / 2);
       
       ctx.drawImage(productImg, x, y, scaledW, scaledH);
       ctx.restore();
     } else {
       ctx.fillStyle = '#f1f5f9';
-      drawRoundedRect(ctx, 120, 200, 840, 580, 48);
+      drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 48);
       ctx.fill();
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '50px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('Imagen no disponible', 540, 490);
     }
 
-    // Etiqueta de Oferta
-    const hasOffer = product.compareAtPrice && product.compareAtPrice > product.price;
-    if (hasOffer) {
-      ctx.shadowColor = 'rgba(239, 68, 68, 0.4)';
-      ctx.shadowBlur = 20;
-      ctx.shadowOffsetY = 10;
-      ctx.fillStyle = '#ef4444';
-      drawRoundedRect(ctx, 720, 160, 280, 80, 40);
-      ctx.fill();
-      ctx.shadowColor = 'transparent';
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 36px "Inter", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('¡OFERTA!', 860, 215);
-    }
-
-    // Nombre del Producto
-    ctx.fillStyle = '#1e293b';
-    ctx.font = 'bold 52px "Inter", sans-serif';
-    ctx.textAlign = 'center';
-    let text = product.name;
-    if (text.length > 25) text = text.substring(0, 23) + '...';
-    ctx.fillText(text, 540, 850); // Subido un poco
-
-    // Precios en la parte inferior de la tarjeta blanca
-    const priceY = 940;
-    
-    if (hasOffer) {
-      // Precio original más chico (Tachado)
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = 'bold 36px "Inter", sans-serif';
-      ctx.textAlign = 'right';
-      const oldPriceText = `$${(Number(product.compareAtPrice)||0).toFixed(2)}`;
-      ctx.fillText(oldPriceText, 480, priceY);
+    // 4. Logo de la Tienda (Esquina superior izquierda)
+    if (logoImg) {
+      ctx.save();
+      const logoSize = 120;
+      const logoX = cardX + 40;
+      const logoY = cardY + 40;
       
-      const oldPriceW = ctx.measureText(oldPriceText).width;
       ctx.beginPath();
-      ctx.moveTo(480 - oldPriceW - 5, priceY - 12);
-      ctx.lineTo(480 + 5, priceY - 12);
+      ctx.arc(logoX + logoSize/2, logoY + logoSize/2, logoSize/2 + 10, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0,0,0,0.3)';
+      ctx.shadowBlur = 15;
+      ctx.fill();
+      ctx.clip();
+      
+      ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+      ctx.restore();
+    }
+
+    // Función para textos atractivos superpuestos
+    const drawTextAttractive = (text, x, y, font, fillColor, strokeColor, lineWidth = 12) => {
+      ctx.font = font;
+      ctx.textAlign = 'center';
+      ctx.lineJoin = 'round';
+      ctx.miterLimit = 2;
+      ctx.lineWidth = lineWidth;
+      ctx.strokeStyle = strokeColor;
+      
+      // Sombra para darle profundidad extra al borde
+      ctx.shadowColor = 'rgba(0,0,0,0.4)';
+      ctx.shadowBlur = 15;
+      ctx.shadowOffsetY = 8;
+      
+      ctx.strokeText(text, x, y);
+      
+      ctx.shadowColor = 'transparent';
+      ctx.fillStyle = fillColor;
+      ctx.fillText(text, x, y);
+    };
+
+    // 5. Nombre del Producto (Superpuesto en la parte inferior)
+    let text = product.name;
+    if (text.length > 30) text = text.substring(0, 27) + '...';
+    // Nombre con borde del color principal y relleno blanco
+    drawTextAttractive(text, 540, 840, '900 68px "Inter", sans-serif', '#ffffff', primaryColor, 14);
+
+    // 6. Precios con fuente distinta (Arial Black / Impact style)
+    const hasOffer = product.compareAtPrice && product.compareAtPrice > product.price;
+    const priceY = 960;
+    const priceFont = '900 90px "Arial Black", "Impact", sans-serif'; // FUENTE DISTINTA PARA EL PRECIO
+
+    if (hasOffer) {
+      // Precio original tachado (Más chico y con borde rojo)
+      const oldPrice = `$${(Number(product.compareAtPrice)||0).toFixed(2)}`;
+      const oldPriceFont = '900 54px "Arial Black", "Impact", sans-serif';
+      drawTextAttractive(oldPrice, 340, priceY - 10, oldPriceFont, '#f8fafc', '#ef4444', 10);
+      
+      // Línea de tachado gruesa
+      const oldPriceW = ctx.measureText(oldPrice).width;
+      ctx.beginPath();
+      ctx.moveTo(340 - oldPriceW/2 - 15, priceY - 28);
+      ctx.lineTo(340 + oldPriceW/2 + 15, priceY - 28);
       ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 8;
       ctx.stroke();
 
-      // Precio actual grande
-      ctx.fillStyle = primaryColor;
-      ctx.font = '900 56px "Inter", sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(`$${(Number(product.price)||0).toFixed(2)}`, 520, priceY);
+      // Precio oferta normal (Grande y con borde oscuro)
+      drawTextAttractive(`$${(Number(product.price)||0).toFixed(2)}`, 700, priceY, priceFont, '#ffffff', '#0f172a', 16);
+      
+      // Etiqueta ¡OFERTA! (Arriba a la derecha)
+      drawTextAttractive('¡OFERTA!', cardX + cardW - 200, cardY + 120, '900 76px "Arial Black", "Impact", sans-serif', '#ef4444', '#ffffff', 16);
     } else {
-      // Píldora de Precio Centrada
-      ctx.fillStyle = primaryColor;
-      drawRoundedRect(ctx, 390, 880, 300, 90, 45); // Centrado en Y=925
-      ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 48px "Inter", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(`$${(Number(product.price)||0).toFixed(2)}`, 540, 942);
+      // Precio normal centrado
+      drawTextAttractive(`$${(Number(product.price)||0).toFixed(2)}`, 540, priceY, priceFont, '#ffffff', '#0f172a', 16);
     }
   };
 
