@@ -169,10 +169,11 @@ export default function StoreView({ forceSlug }) {
       <div 
         style={{ 
           height: '350px', 
-          backgroundImage: `url(${store.bannerUrl})`,
+          backgroundImage: `url(${store.bannerUrl || 'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2000&auto=format&fit=crop'})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          position: 'relative'
+          position: 'relative',
+          backgroundColor: store.themeColor || 'var(--bg-secondary)'
         }}
       >
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.7))' }}></div>
@@ -181,9 +182,9 @@ export default function StoreView({ forceSlug }) {
       <div className="container" style={{ position: 'relative', marginTop: '-120px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '40px' }}>
           <img 
-            src={store.logoUrl} 
+            src={store.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(store.name)}&background=${(store.themeColor || '6366f1').replace('#', '')}&color=fff&size=160`} 
             alt={store.name} 
-            style={{ width: '160px', height: '160px', borderRadius: '50%', border: `6px solid var(--bg-primary)`, boxShadow: '0 8px 30px rgba(0,0,0,0.5)', zIndex: 10, position: 'relative' }}
+            style={{ width: '160px', height: '160px', borderRadius: '50%', border: `6px solid var(--bg-primary)`, boxShadow: '0 8px 30px rgba(0,0,0,0.5)', zIndex: 10, position: 'relative', objectFit: 'cover', backgroundColor: 'var(--bg-primary)' }}
           />
           <h1 style={{ fontSize: '3rem', margin: '24px 0 12px 0', letterSpacing: '-1px' }}>{store.name}</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto', lineHeight: '1.6' }}>{store.description}</p>
