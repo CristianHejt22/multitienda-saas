@@ -15,6 +15,9 @@ export default function ProductDetail({ forceSlug }) {
   
   const [store, setStore] = useState(null);
   const [product, setProduct] = useState(null);
+  const [products, setProducts] = useState([]);
+  const relatedProducts = products.filter(p => p.id !== product?.id).slice(0, 4);
+
   const [selectedVariants, setSelectedVariants] = useState({});
   const [loading, setLoading] = useState(true);
   
@@ -28,6 +31,7 @@ export default function ProductDetail({ forceSlug }) {
       if (s) {
         setStore(s);
         const prods = await getProductsByStore(s.id);
+        setProducts(prods);
         const found = prods.find(p => p.id === productId);
         if (found) {
           setProduct(found);
@@ -132,8 +136,15 @@ export default function ProductDetail({ forceSlug }) {
                 <span style={{ background: '#ef4444', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '1rem', fontWeight: 'bold' }}>OFERTA</span>
               )}
             </h1>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <VariantSelector 
+                variants={product.variants} 
+                selectedVariants={selectedVariants} 
+                onVariantChange={handleVariantChange} 
+              />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px', padding: '16px', backgroundColor: 'var(--bg-secondary)', borderRadius: '16px' }}>
               <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: store.themeColor }}>
                 ${(Number(product.price) || 0).toFixed(2)}
               </div>
@@ -142,14 +153,6 @@ export default function ProductDetail({ forceSlug }) {
                   ${(Number(product.compareAtPrice) || 0).toFixed(2)}
                 </div>
               )}
-            </div>
-
-            <div style={{ marginBottom: '40px' }}>
-              <VariantSelector 
-                variants={product.variants} 
-                selectedVariants={selectedVariants} 
-                onVariantChange={handleVariantChange} 
-              />
             </div>
 
             <div style={{ marginTop: 'auto' }}>
@@ -203,6 +206,28 @@ export default function ProductDetail({ forceSlug }) {
             </h2>
             <div style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', lineHeight: '1.8', whiteSpace: 'pre-wrap' }}>
               {product.description}
+            </div>
+          </div>
+        )}
+
+        {/* Productos Relacionados */}
+        {relatedProducts.length > 0 && (
+          <div style={{ marginTop: '60px' }}>
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '24px' }}>También te podría interesar</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '24px' }}>
+              {relatedProducts.map(p => (
+                <Link to={`/${store.slug}/product/${p.id}`} key={p.id} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <div className="card" style={{ transition: 'transform 0.2s', height: '100%', display: 'flex', flexDirection: 'column' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+                    <img src={p.imageUrl || 'https://via.placeholder.com/400'} alt={p.name} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', borderRadius: '12px 12px 0 0' }} />
+                    <div style={{ padding: '16px', flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <h3 style={{ fontSize: '1.1rem', marginBottom: '8px' }}>{p.name}</h3>
+                      <div style={{ fontWeight: 'bold', color: store.themeColor, fontSize: '1.2rem' }}>
+                        ${(Number(p.price) || 0).toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
         )}
