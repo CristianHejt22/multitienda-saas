@@ -27,6 +27,8 @@ export default function ProductDetail({ forceSlug }) {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      window.scrollTo(0, 0);
+      setSelectedVariants({});
       const s = await getStoreBySlug(storeSlug);
       if (s) {
         setStore(s);

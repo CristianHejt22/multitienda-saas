@@ -104,17 +104,43 @@ export const updateCategory = async (id, name) => {
 export const getProductsByStore = async (storeId) => {
   const { data, error } = await supabase.from('products').select('*').eq('store_id', storeId).order('created_at', { ascending: false });
   if (error) console.error(error);
-  return data ? data.map(p => ({...p, categoryId: p.category_id, compareAtPrice: p.compare_at_price, imageUrl: p.image_url, storeId: p.store_id})) : [];
+  
+  return data ? data.map(p => {
+    let description = p.description || '';
+    let variants = [];
+    if (description.includes('===VARIANTS===')) {
+      const parts = description.split('===VARIANTS===');
+      description = parts[0].trim();
+      try {
+        variants = JSON.parse(parts[1].trim());
+      } catch (e) { console.error('Error parsing variants'); }
+    }
+    
+    return {
+      ...p, 
+      categoryId: p.category_id, 
+      compareAtPrice: p.compare_at_price, 
+      imageUrl: p.image_url, 
+      storeId: p.store_id,
+      description,
+      variants
+    };
+  }) : [];
 };
 
 export const addProduct = async (productData) => {
+  let desc = productData.description || '';
+  if (productData.variants && productData.variants.length > 0) {
+    desc += `\n\n===VARIANTS===\n${JSON.stringify(productData.variants)}`;
+  }
+
   const dbData = {
     store_id: productData.storeId,
     category_id: productData.categoryId,
     name: productData.name,
     price: productData.price,
     compare_at_price: productData.compareAtPrice,
-    description: productData.description,
+    description: desc,
     image_url: productData.imageUrl,
   };
   const { data, error } = await supabase.from('products').insert([dbData]).select().single();
@@ -130,9 +156,17 @@ export const updateProduct = async (id, updates) => {
   if (updates.name !== undefined) dbUpdates.name = updates.name;
   if (updates.price !== undefined) dbUpdates.price = updates.price;
   if (updates.compareAtPrice !== undefined) dbUpdates.compare_at_price = updates.compareAtPrice;
-  if (updates.description !== undefined) dbUpdates.description = updates.description;
   if (updates.imageUrl !== undefined) dbUpdates.image_url = updates.imageUrl;
   if (updates.categoryId !== undefined) dbUpdates.category_id = updates.categoryId;
+
+  // Handle variants and description together
+  let finalDesc = updates.description !== undefined ? updates.description : undefined;
+  if (updates.variants !== undefined) {
+    finalDesc = (finalDesc || '') + (updates.variants.length > 0 ? `\n\n===VARIANTS===\n${JSON.stringify(updates.variants)}` : '');
+  }
+  if (finalDesc !== undefined) {
+    dbUpdates.description = finalDesc;
+  }
 
   const { error } = await supabase.from('products').update(dbUpdates).eq('id', id);
   if (error) console.error(error);
