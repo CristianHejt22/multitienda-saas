@@ -465,6 +465,7 @@ export default function StoreAdmin({ forceSlug }) {
 
   const handleVariantOptionsChange = (index, value) => {
     const newVariants = [...(editingProduct.variants || [])];
+    newVariants[index].optionsString = value;
     newVariants[index].options = value.split(',').map(opt => opt.trim()).filter(opt => opt);
     setEditingProduct({ ...editingProduct, variants: newVariants });
   };
@@ -1047,7 +1048,7 @@ export default function StoreAdmin({ forceSlug }) {
                   {(editingProduct.variants || []).map((v, i) => (
                     <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                       <input type="text" placeholder="Ej: Talle" value={v.name} onChange={e => handleVariantNameChange(i, e.target.value)} style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white', fontSize: '0.85rem' }} />
-                      <input type="text" placeholder="S, M, L (separado por coma)" value={(v.options || []).join(', ')} onChange={e => handleVariantOptionsChange(i, e.target.value)} style={{ flex: 2, padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white', fontSize: '0.85rem' }} />
+                      <input type="text" placeholder="S, M, L (separado por coma)" value={v.optionsString !== undefined ? v.optionsString : (v.options || []).join(', ')} onChange={e => handleVariantOptionsChange(i, e.target.value)} style={{ flex: 2, padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white', fontSize: '0.85rem' }} />
                       <button type="button" onClick={() => handleRemoveVariant(i)} className="btn btn-outline" style={{ padding: '8px', color: '#ef4444', borderColor: 'transparent' }}><Trash2 size={16} /></button>
                     </div>
                   ))}
