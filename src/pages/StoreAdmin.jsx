@@ -450,6 +450,31 @@ export default function StoreAdmin({ forceSlug }) {
     }
   };
 
+  const handleAddVariant = () => {
+    setEditingProduct({
+      ...editingProduct,
+      variants: [...(editingProduct.variants || []), { name: '', options: [] }]
+    });
+  };
+
+  const handleVariantNameChange = (index, value) => {
+    const newVariants = [...(editingProduct.variants || [])];
+    newVariants[index].name = value;
+    setEditingProduct({ ...editingProduct, variants: newVariants });
+  };
+
+  const handleVariantOptionsChange = (index, value) => {
+    const newVariants = [...(editingProduct.variants || [])];
+    newVariants[index].options = value.split(',').map(opt => opt.trim()).filter(opt => opt);
+    setEditingProduct({ ...editingProduct, variants: newVariants });
+  };
+
+  const handleRemoveVariant = (index) => {
+    const newVariants = [...(editingProduct.variants || [])];
+    newVariants.splice(index, 1);
+    setEditingProduct({ ...editingProduct, variants: newVariants });
+  };
+
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     showPopup('Copiado', 'Texto copiado al portapapeles', 'success');
@@ -1009,12 +1034,24 @@ export default function StoreAdmin({ forceSlug }) {
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Precio ($)</label>
-                    <input required type="number" step="0.01" value={editingProduct.price} onChange={e => setEditingProduct({...editingProduct, price: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white' }} />
+                    <input required type="number" step="0.01" value={editingProduct.price || ''} onChange={e => setEditingProduct({...editingProduct, price: parseFloat(e.target.value) || 0})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white' }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: '#ef4444' }}>Precio Oferta</label>
-                    <input type="number" step="0.01" placeholder="Tachado" value={editingProduct.compareAtPrice || ''} onChange={e => setEditingProduct({...editingProduct, compareAtPrice: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white' }} />
+                    <input type="number" step="0.01" placeholder="Tachado" value={editingProduct.compareAtPrice || ''} onChange={e => setEditingProduct({...editingProduct, compareAtPrice: e.target.value ? parseFloat(e.target.value) : null})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white' }} />
                   </div>
+                </div>
+
+                <div style={{ background: 'var(--bg-primary)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 'bold' }}>Variantes (Talles, Colores...)</label>
+                  {(editingProduct.variants || []).map((v, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                      <input type="text" placeholder="Ej: Talle" value={v.name} onChange={e => handleVariantNameChange(i, e.target.value)} style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white', fontSize: '0.85rem' }} />
+                      <input type="text" placeholder="S, M, L (separado por coma)" value={(v.options || []).join(', ')} onChange={e => handleVariantOptionsChange(i, e.target.value)} style={{ flex: 2, padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'white', fontSize: '0.85rem' }} />
+                      <button type="button" onClick={() => handleRemoveVariant(i)} className="btn btn-outline" style={{ padding: '8px', color: '#ef4444', borderColor: 'transparent' }}><Trash2 size={16} /></button>
+                    </div>
+                  ))}
+                  <button type="button" className="btn btn-outline" onClick={handleAddVariant} style={{ width: '100%', padding: '8px', fontSize: '0.85rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}><Plus size={16} /> Agregar Variante</button>
                 </div>
 
                 <div>
