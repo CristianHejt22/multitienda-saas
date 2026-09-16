@@ -218,7 +218,7 @@ export default function ProductDetail({ forceSlug }) {
             <h2 style={{ fontSize: '1.8rem', marginBottom: '24px' }}>También te podría interesar</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '24px' }}>
               {relatedProducts.map(p => (
-                <Link to={`/${store.slug}/product/${p.id}`} key={p.id} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <Link to={`/${store.slug}/p/${p.id}`} key={p.id} style={{ textDecoration: 'none', color: 'inherit' }}>
                   <div className="card" style={{ transition: 'transform 0.2s', height: '100%', display: 'flex', flexDirection: 'column' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
                     <img src={p.imageUrl || 'https://via.placeholder.com/400'} alt={p.name} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', borderRadius: '12px 12px 0 0' }} />
                     <div style={{ padding: '16px', flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
